@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2026년 연차촉진 사용계획서</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Malgun Gothic', '맑은 고딕', AppleGothic, sans-serif; background: #f0f2f5; color: #333; min-height: 100vh; }
+    .container { max-width: 960px; margin: 0 auto; padding: 24px 16px 48px; }
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* ── 헤더 ── */
+    .doc-header { background: linear-gradient(135deg, #1a237e, #3949ab); color: white; border-radius: 10px; padding: 28px 32px; margin-bottom: 20px; }
+    .doc-header h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+    .doc-header p   { font-size: 13px; opacity: 0.8; }
+    .doc-header .law-note { font-size: 11px; opacity: 0.65; margin-top: 4px; }
+
+    /* ── 카드 ── */
+    .card { background: white; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-bottom: 16px; overflow: hidden; }
+    .card-header { background: #f7f8fc; border-bottom: 2px solid #3949ab; padding: 14px 20px; }
+    .card-header h3 { font-size: 15px; font-weight: 700; color: #1a237e; }
+    .card-body { padding: 20px; }
+
+    /* ── 폼 ── */
+    .form-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    @media (max-width: 700px) { .form-row { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 400px) { .form-row { grid-template-columns: 1fr; } }
+    .form-group label { display: block; font-size: 12px; color: #666; margin-bottom: 5px; font-weight: 600; }
+    .form-group input { width: 100%; border: 1.5px solid #ddd; border-radius: 6px; padding: 9px 12px; font-size: 14px; font-family: inherit; transition: border-color 0.2s; }
+    .form-group input:focus { outline: none; border-color: #3949ab; box-shadow: 0 0 0 3px rgba(57,73,171,0.1); }
+
+    /* ── 안내 ── */
+    .notice { background: #e8eaf6; border-left: 4px solid #3949ab; border-radius: 4px; padding: 12px 16px; font-size: 12.5px; color: #333; line-height: 1.8; margin-bottom: 12px; }
+    .notice strong { color: #1a237e; }
+
+    /* ── 범례 ── */
+    .legend { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; align-items: center; }
+    .legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #555; }
+    .legend-swatch { width: 28px; height: 18px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; }
+    .sw-full { background: #1565c0; color: white; }
+    .sw-am   { background: #bbdefb; color: #0d47a1; }
+    .sw-pm   { background: #ffe0b2; color: #bf360c; }
+    .legend-sep { color: #ccc; }
+
+    /* ── 카운트 바 ── */
+    .count-bar { display: flex; align-items: center; justify-content: space-between; background: #e8eaf6; border-radius: 6px; padding: 10px 16px; margin-bottom: 16px; flex-wrap: wrap; gap: 6px; }
+    .count-bar .counts { font-size: 13px; color: #3949ab; font-weight: 700; }
+    .count-bar .counts .total { font-size: 15px; }
+    .count-bar button { font-size: 12px; color: #c62828; background: none; border: 1px solid #ef9a9a; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-family: inherit; }
+    .count-bar button:hover { background: #fce4e4; }
+
+    /* ── 달력 ── */
+    .months-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    @media (max-width: 680px) { .months-grid { grid-template-columns: 1fr; } }
+    .month-card { border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; }
+    .month-title { background: #3949ab; color: white; text-align: center; padding: 10px; font-weight: 700; font-size: 14px; }
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+    .dow-header { text-align: center; padding: 6px 0; font-size: 11px; font-weight: 700; color: #555; background: #f5f5f5; border-bottom: 1px solid #e8e8e8; }
+    .dow-header.sun { color: #c62828; }
+    .dow-header.sat { color: #1565c0; }
+
+    /* ── 날짜 셀 공통 ── */
+    .day-cell { min-height: 50px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3px 2px; border: 1px solid transparent; }
+    .day-num  { font-size: 12.5px; font-weight: 500; line-height: 1; margin-bottom: 2px; color: #333; }
+    .day-tag  { font-size: 9.5px; font-weight: 700; border-radius: 3px; padding: 1px 4px; line-height: 1.4; }
+
+    /* 빈칸 / 주말 / 공휴일 */
+    .day-cell.empty   { background: transparent; }
+    .day-cell.sun-cell { background: #fff8f8; }
+    .day-cell.sat-cell { background: #f8fbff; }
+    .day-cell.sun-cell .day-num { color: #c62828; }
+    .day-cell.sat-cell .day-num { color: #1565c0; }
+    .day-cell.holiday  { background: #fff3e0; }
+    .day-cell.holiday .day-num { color: #e65100; font-weight: 600; }
+    .holiday-name { font-size: 8.5px; color: #e65100; text-align: center; line-height: 1.1; max-width: 36px; word-break: keep-all; }
+
+    /* 평일 — 상태별 ── */
+    .day-cell.workday { cursor: pointer; user-select: none; transition: filter 0.1s; }
+    .day-cell.workday:hover { filter: brightness(0.94); }
+
+    /* 비어있음 */
+    .day-cell.workday.s-none { background: #fafafa; }
+    .day-cell.workday.s-none:hover { background: #e8eaf6; }
+
+    /* 전일 연차 */
+    .day-cell.workday.s-full { background: #1565c0; }
+    .day-cell.workday.s-full .day-num { color: white; font-weight: 700; }
+    .day-cell.workday.s-full .day-tag { background: rgba(255,255,255,0.25); color: white; }
+
+    /* 오전 반차 */
+    .day-cell.workday.s-am { background: #bbdefb; }
+    .day-cell.workday.s-am .day-num { color: #0d47a1; font-weight: 700; }
+    .day-cell.workday.s-am .day-tag { background: #90caf9; color: #0d47a1; }
+
+    /* 오후 반차 */
+    .day-cell.workday.s-pm { background: #ffe0b2; }
+    .day-cell.workday.s-pm .day-num { color: #bf360c; font-weight: 700; }
+    .day-cell.workday.s-pm .day-tag { background: #ffcc80; color: #bf360c; }
+
+    /* ── 버튼 ── */
+    .btn-row { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
+    .btn { padding: 12px 28px; border: none; border-radius: 7px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; transition: filter 0.15s, transform 0.1s; }
+    .btn:hover  { filter: brightness(0.93); }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: #3949ab; color: white; }
+    .btn-ghost   { background: #e0e0e0; color: #555; }
+    .btn-success { background: #2e7d32; color: white; }
+    .btn-danger  { background: #c62828; color: white; }
+
+    /* ── 페이지 2 요약 ── */
+    .emp-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 18px; }
+    @media (max-width: 600px) { .emp-summary { grid-template-columns: 1fr 1fr; } }
+    .emp-field { background: #f7f8fc; border-radius: 6px; padding: 10px 14px; }
+    .emp-field .label { font-size: 11px; color: #888; margin-bottom: 3px; }
+    .emp-field .value { font-size: 14px; font-weight: 700; color: #1a237e; }
+
+    .chips-section { margin-bottom: 12px; }
+    .chips-section-title { font-size: 12px; font-weight: 700; color: #555; margin-bottom: 6px; }
+    .date-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip-full { background: #1565c0; color: white; border-radius: 16px; padding: 4px 12px; font-size: 12px; font-weight: 600; }
+    .chip-am   { background: #bbdefb; color: #0d47a1; border-radius: 16px; padding: 4px 12px; font-size: 12px; font-weight: 600; }
+    .chip-pm   { background: #ffe0b2; color: #bf360c; border-radius: 16px; padding: 4px 12px; font-size: 12px; font-weight: 600; }
+    .summary-total { font-size: 14px; font-weight: 700; color: #1a237e; margin-bottom: 14px; }
+
+    /* ── 서명 ── */
+    .sig-wrap { border: 2px dashed #90caf9; border-radius: 8px; background: #fafcff; padding: 12px; text-align: center; }
+    canvas#sigCanvas { display: block; margin: 0 auto; cursor: crosshair; touch-action: none; background: white; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); max-width: 100%; height: auto; }
+    .sig-hint { font-size: 12px; color: #aaa; margin-top: 8px; }
+    .sig-btn-row { display: flex; gap: 8px; margin-top: 12px; }
+
+    /* ── 완료 ── */
+    .complete-wrap { text-align: center; padding: 60px 24px; background: white; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    .complete-icon { font-size: 72px; margin-bottom: 20px; }
+    .complete-wrap h2 { font-size: 24px; color: #1a237e; margin-bottom: 10px; }
+    .complete-wrap p { color: #666; font-size: 14px; margin-bottom: 6px; }
+    .complete-info-table { background: #f7f8fc; border-radius: 8px; padding: 20px 28px; display: inline-block; text-align: left; margin: 20px 0 28px; min-width: 280px; }
+    .complete-info-table table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .complete-info-table td { padding: 6px 10px; }
+    .complete-info-table td:first-child { color: #888; width: 90px; }
+    .complete-info-table td:last-child { font-weight: 700; }
+
+    @media print {
+      body { background: white; }
+      .btn-row, .sig-btn-row, .count-bar button { display: none !important; }
+      .page { display: block !important; }
+      #page1 { page-break-after: always; }
+      .card { box-shadow: none; border: 1px solid #ddd; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ══════════════ PAGE 1 : 날짜 선택 ══════════════ -->
+  <div id="page1" class="page active">
+    <div class="doc-header">
+      <h1>2026년 연차촉진 사용계획서</h1>
+      <p>2026년 7월 1일 ~ 12월 31일 연차유급휴가 사용 계획</p>
+      <div class="law-note">근로기준법 제61조 (연차유급휴가의 사용 촉진)</div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h3>직원 정보</h3></div>
+      <div class="card-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label>사원번호</label>
+            <input type="text" id="empNo" placeholder="20240001" maxlength="20">
+          </div>
+          <div class="form-group">
+            <label>성명 <span style="color:#c62828">*</span></label>
+            <input type="text" id="empName" placeholder="홍길동" maxlength="20">
+          </div>
+          <div class="form-group">
+            <label>부서</label>
+            <input type="text" id="empDept" placeholder="영업팀" maxlength="30">
+          </div>
+          <div class="form-group">
+            <label>직책</label>
+            <input type="text" id="empTitle" placeholder="대리" maxlength="20">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h3>연차 사용 계획 선택</h3></div>
+      <div class="card-body">
+        <div class="notice">
+          <strong>클릭 방법:</strong> 날짜 셀을 클릭할 때마다
+          <strong style="color:#1565c0">전일연차</strong> →
+          <strong style="color:#0d47a1">오전반차</strong> →
+          <strong style="color:#bf360c">오후반차</strong> → 해제 순으로 바뀝니다.<br>
+          토·일요일 및 공휴일은 선택할 수 없습니다. &nbsp;|&nbsp;
+          <strong>2026년 하반기 공휴일:</strong>
+          광복절대체(8/17) · 추석전날(9/24) · 추석(9/25) · 개천절대체(10/5) · 한글날(10/9) · 성탄절(12/25)
+        </div>
+
+        <div class="legend">
+          <div class="legend-item">
+            <div class="legend-swatch sw-full">연차</div><span>전일 연차 (1일)</span>
+          </div>
+          <span class="legend-sep">|</span>
+          <div class="legend-item">
+            <div class="legend-swatch sw-am">오전</div><span>오전 반차 (0.5일)</span>
+          </div>
+          <span class="legend-sep">|</span>
+          <div class="legend-item">
+            <div class="legend-swatch sw-pm">오후</div><span>오후 반차 (0.5일)</span>
+          </div>
+        </div>
+
+        <div class="count-bar">
+          <div class="counts" id="countBar">선택된 연차: <span class="total">0일</span></div>
+          <button onclick="clearAll()">전체 해제</button>
+        </div>
+
+        <div class="months-grid" id="calendarsContainer"></div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="goToPage2()">다음 단계: 서명 →</button>
+    </div>
+  </div>
+
+  <!-- ══════════════ PAGE 2 : 서명 ══════════════ -->
+  <div id="page2" class="page">
+    <div class="doc-header">
+      <h1>2026년 연차촉진 사용계획서</h1>
+      <p>내용을 확인하고 서명 후 제출하세요</p>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h3>계획서 내용 확인</h3></div>
+      <div class="card-body">
+        <div class="emp-summary" id="empSummary"></div>
+        <div class="summary-total" id="summaryTotal"></div>
+        <div id="chipsArea"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h3>본인 서명</h3></div>
+      <div class="card-body">
+        <p style="font-size:13px;color:#666;margin-bottom:14px;">위 연차 사용 계획에 동의하며 서명합니다.</p>
+        <div class="sig-wrap">
+          <canvas id="sigCanvas" width="700" height="160"></canvas>
+          <div class="sig-hint">마우스(PC) 또는 손가락(모바일)으로 서명하세요</div>
+        </div>
+        <div class="sig-btn-row">
+          <button class="btn btn-danger" style="padding:8px 18px;font-size:13px" onclick="clearSignature()">서명 지우기</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="goToPage1()">← 이전</button>
+      <button class="btn btn-success" onclick="submitForm()">제출 완료</button>
+    </div>
+  </div>
+
+  <!-- ══════════════ PAGE 3 : 완료 ══════════════ -->
+  <div id="page3" class="page">
+    <div class="complete-wrap">
+      <div class="complete-icon">✅</div>
+      <h2>제출이 완료되었습니다</h2>
+      <p>2026년 연차촉진 사용계획서가 정상적으로 제출되었습니다.</p>
+      <p style="color:#aaa">담당자 확인 후 승인됩니다.</p>
+      <div class="complete-info-table" id="completeInfo"></div>
+      <br>
+      <button class="btn btn-primary" onclick="window.print()">🖨 인쇄하기</button>
+    </div>
+  </div>
+
+</div>
+<script>
+  const HOLIDAYS = {
+    '2026-08-15': '광복절',
+    '2026-08-17': '광복절대체',
+    '2026-09-24': '추석전날',
+    '2026-09-25': '추석',
+    '2026-10-03': '개천절',
+    '2026-10-05': '개천절대체',
+    '2026-10-09': '한글날',
+    '2026-12-25': '성탄절',
+  };
+
+  const MONTHS = [
+    { year: 2026, month: 6,  label: '2026년 7월'  },
+    { year: 2026, month: 7,  label: '2026년 8월'  },
+    { year: 2026, month: 8,  label: '2026년 9월'  },
+    { year: 2026, month: 9,  label: '2026년 10월' },
+    { year: 2026, month: 10, label: '2026년 11월' },
+    { year: 2026, month: 11, label: '2026년 12월' },
+  ];
+
+  const DOW = ['일','월','화','수','목','금','토'];
+
+  // key(date string) → 'full' | 'am' | 'pm'
+  const selected = new Map();
+  const CYCLE = [null, 'full', 'am', 'pm'];
+  const TAG_LABEL = { full: '연차', am: '오전', pm: '오후' };
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function toKey(y, m, d) { return `${y}-${pad(m+1)}-${pad(d)}`; }
+
+  function applyState(cell, state) {
+    cell.classList.remove('s-none', 's-full', 's-am', 's-pm');
+    cell.classList.add(state ? `s-${state}` : 's-none');
+    let tag = cell.querySelector('.day-tag');
+    if (state) {
+      if (!tag) { tag = document.createElement('div'); tag.className = 'day-tag'; cell.appendChild(tag); }
+      tag.textContent = TAG_LABEL[state];
+    } else {
+      if (tag) tag.remove();
+    }
+  }
+
+  function buildCalendar(year, month, label) {
+    const card = document.createElement('div');
+    card.className = 'month-card';
+
+    const title = document.createElement('div');
+    title.className = 'month-title';
+    title.textContent = label;
+    card.appendChild(title);
+
+    const grid = document.createElement('div');
+    grid.className = 'cal-grid';
+
+    DOW.forEach((d, i) => {
+      const h = document.createElement('div');
+      h.className = 'dow-header' + (i === 0 ? ' sun' : i === 6 ? ' sat' : '');
+      h.textContent = d;
+      grid.appendChild(h);
+    });
+
+    const firstDow = new Date(year, month, 1).getDay();
+    for (let i = 0; i < firstDow; i++) {
+      const e = document.createElement('div');
+      e.className = 'day-cell empty';
+      grid.appendChild(e);
+    }
+
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dow = new Date(year, month, d).getDay();
+      const key = toKey(year, month, d);
+      const holidayName = HOLIDAYS[key];
+
+      const cell = document.createElement('div');
+      const numEl = document.createElement('div');
+      numEl.className = 'day-num';
+      numEl.textContent = d;
+
+      if (holidayName) {
+        cell.className = 'day-cell holiday';
+        cell.appendChild(numEl);
+        const hl = document.createElement('div');
+        hl.className = 'holiday-name';
+        hl.textContent = holidayName;
+        cell.appendChild(hl);
+      } else if (dow === 0) {
+        cell.className = 'day-cell sun-cell';
+        cell.appendChild(numEl);
+      } else if (dow === 6) {
+        cell.className = 'day-cell sat-cell';
+        cell.appendChild(numEl);
+      } else {
+        cell.className = 'day-cell workday';
+        cell.appendChild(numEl);
+        const cur = selected.get(key) || null;
+        applyState(cell, cur);
+
+        cell.addEventListener('click', () => {
+          const idx = CYCLE.indexOf(selected.get(key) || null);
+          const next = CYCLE[(idx + 1) % CYCLE.length];
+          if (next === null) selected.delete(key);
+          else selected.set(key, next);
+          applyState(cell, next);
+          updateCount();
+        });
+      }
+
+      grid.appendChild(cell);
+    }
+
+    card.appendChild(grid);
+    return card;
+  }
+
+  function renderCalendars() {
+    const cont = document.getElementById('calendarsContainer');
+    cont.innerHTML = '';
+    MONTHS.forEach(({ year, month, label }) => cont.appendChild(buildCalendar(year, month, label)));
+    updateCount();
+  }
+
+  function calcTotal() {
+    let total = 0, full = 0, am = 0, pm = 0;
+    selected.forEach(v => {
+      if (v === 'full') { full++; total += 1; }
+      else if (v === 'am') { am++; total += 0.5; }
+      else if (v === 'pm') { pm++; total += 0.5; }
+    });
+    return { total, full, am, pm };
+  }
+
+  function updateCount() {
+    const { total, full, am, pm } = calcTotal();
+    const parts = [];
+    if (full) parts.push(`전일 ${full}일`);
+    if (am)   parts.push(`오전반차 ${am}회`);
+    if (pm)   parts.push(`오후반차 ${pm}회`);
+    const detail = parts.length ? ` (${parts.join(' · ')})` : '';
+    document.getElementById('countBar').innerHTML =
+      `선택된 연차: <span class="total">${total}일</span>${detail}`;
+  }
+
+  function clearAll() { selected.clear(); renderCalendars(); }
+
+  /* ── 페이지 전환 ── */
+  function showPage(id) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function goToPage2() {
+    const name = document.getElementById('empName').value.trim();
+    if (!name) { alert('성명을 입력하세요.'); document.getElementById('empName').focus(); return; }
+    if (selected.size === 0) { alert('연차 사용 날짜를 하나 이상 선택하세요.'); return; }
+
+    const empNo = document.getElementById('empNo').value.trim();
+    const dept  = document.getElementById('empDept').value.trim();
+    const title = document.getElementById('empTitle').value.trim();
+
+    document.getElementById('empSummary').innerHTML = `
+      <div class="emp-field"><div class="label">사원번호</div><div class="value">${esc(empNo)||'—'}</div></div>
+      <div class="emp-field"><div class="label">성명</div><div class="value">${esc(name)}</div></div>
+      <div class="emp-field"><div class="label">부서</div><div class="value">${esc(dept)||'—'}</div></div>
+      <div class="emp-field"><div class="label">직책</div><div class="value">${esc(title)||'—'}</div></div>
+    `;
+
+    const { total, full, am, pm } = calcTotal();
+    const parts = [];
+    if (full) parts.push(`전일연차 ${full}일`);
+    if (am)   parts.push(`오전반차 ${am}회`);
+    if (pm)   parts.push(`오후반차 ${pm}회`);
+    document.getElementById('summaryTotal').textContent =
+      `합계 ${total}일 (${parts.join(' · ')})`;
+
+    // 칩 영역
+    const area = document.getElementById('chipsArea');
+    area.innerHTML = '';
+    const groups = [
+      { key: 'full', cls: 'chip-full', label: '전일 연차', suffix: '' },
+      { key: 'am',   cls: 'chip-am',   label: '오전 반차', suffix: ' 오전' },
+      { key: 'pm',   cls: 'chip-pm',   label: '오후 반차', suffix: ' 오후' },
+    ];
+    groups.forEach(({ key, cls, label, suffix }) => {
+      const dates = Array.from(selected.entries())
+        .filter(([, v]) => v === key)
+        .map(([k]) => k)
+        .sort();
+      if (!dates.length) return;
+      const sec = document.createElement('div');
+      sec.className = 'chips-section';
+      sec.innerHTML = `<div class="chips-section-title">${label} (${dates.length}${key==='full'?'일':'회'})</div>`;
+      const row = document.createElement('div');
+      row.className = 'date-chips';
+      dates.forEach(k => {
+        const [y, m, d] = k.split('-').map(Number);
+        const dow = new Date(y, m-1, d).getDay();
+        const chip = document.createElement('span');
+        chip.className = cls;
+        chip.textContent = `${m}/${d}(${DOW[dow]})${suffix}`;
+        row.appendChild(chip);
+      });
+      sec.appendChild(row);
+      area.appendChild(sec);
+    });
+
+    showPage('page2');
+  }
+
+  function goToPage1() { showPage('page1'); }
+
+  /* ── 서명 ── */
+  let sigCtx = null, drawing = false, lx = 0, ly = 0;
+
+  function initCanvas() {
+    const canvas = document.getElementById('sigCanvas');
+    sigCtx = canvas.getContext('2d');
+    sigCtx.strokeStyle = '#111';
+    sigCtx.lineWidth = 2.2;
+    sigCtx.lineCap = 'round';
+    sigCtx.lineJoin = 'round';
+
+    function pos(e) {
+      const r = canvas.getBoundingClientRect();
+      const src = e.touches ? e.touches[0] : e;
+      return { x: (src.clientX - r.left) * canvas.width / r.width,
+               y: (src.clientY - r.top)  * canvas.height / r.height };
+    }
+    const start = e => { drawing = true; const p = pos(e); lx = p.x; ly = p.y; };
+    const move  = e => {
+      if (!drawing) return;
+      const p = pos(e);
+      sigCtx.beginPath(); sigCtx.moveTo(lx, ly); sigCtx.lineTo(p.x, p.y); sigCtx.stroke();
+      lx = p.x; ly = p.y;
+    };
+    const stop = () => { drawing = false; };
+
+    canvas.addEventListener('mousedown', start);
+    canvas.addEventListener('mousemove', move);
+    canvas.addEventListener('mouseup', stop);
+    canvas.addEventListener('mouseleave', stop);
+    canvas.addEventListener('touchstart', e => { e.preventDefault(); start(e); }, { passive: false });
+    canvas.addEventListener('touchmove',  e => { e.preventDefault(); move(e); },  { passive: false });
+    canvas.addEventListener('touchend', stop);
+  }
+
+  function clearSignature() {
+    const c = document.getElementById('sigCanvas');
+    sigCtx.clearRect(0, 0, c.width, c.height);
+  }
+  function isSigEmpty() {
+    const c = document.getElementById('sigCanvas');
+    return !sigCtx.getImageData(0, 0, c.width, c.height).data.some(v => v !== 0);
+  }
+
+  /* ── 제출 ── */
+  async function submitForm() {
+    if (isSigEmpty()) { alert('서명을 먼저 해주세요.'); return; }
+
+    const empNo     = document.getElementById('empNo').value.trim();
+    const name      = document.getElementById('empName').value.trim();
+    const dept      = document.getElementById('empDept').value.trim();
+    const title     = document.getElementById('empTitle').value.trim();
+    const signature = document.getElementById('sigCanvas').toDataURL('image/png');
+
+    // dates: [{date, type}] 형식으로 전송
+    const dates = Array.from(selected.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, type]) => ({ date, type }));
+
+    const submitBtn = document.querySelector('#page2 .btn-success');
+    submitBtn.disabled = true;
+    submitBtn.textContent = '제출 중…';
+
+    try {
+      const res = await fetch('/api/leave-plans', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ emp_no: empNo, name, dept, title, dates, signature }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error || '서버 오류');
+      const data = await res.json();
+
+      const { total, full, am, pm } = calcTotal();
+      const parts = [];
+      if (full) parts.push(`전일연차 ${full}일`);
+      if (am)   parts.push(`오전반차 ${am}회`);
+      if (pm)   parts.push(`오후반차 ${pm}회`);
+
+      document.getElementById('completeInfo').innerHTML = `
+        <table>
+          <tr><td>사원번호</td><td>${esc(empNo)||'—'}</td></tr>
+          <tr><td>성명</td><td>${esc(name)}</td></tr>
+          <tr><td>부서</td><td>${esc(dept)||'—'}</td></tr>
+          <tr><td>직책</td><td>${esc(title)||'—'}</td></tr>
+          <tr><td>연차 합계</td><td style="color:#1a237e">${total}일</td></tr>
+          <tr><td>상세</td><td>${parts.join(' · ')}</td></tr>
+          <tr><td>제출일시</td><td>${new Date(data.submittedAt).toLocaleString('ko-KR')}</td></tr>
+        </table>
+      `;
+      showPage('page3');
+    } catch (err) {
+      alert('제출에 실패했습니다: ' + err.message);
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = '제출 완료';
+    }
+  }
+
+  function esc(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  renderCalendars();
+  initCanvas();
+</script>
+</body>
+</html>

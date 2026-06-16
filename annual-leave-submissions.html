@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>연차촉진 사용계획서 — 제출 내역</title>
+  <!-- SheetJS (엑셀 생성) -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Malgun Gothic', '맑은 고딕', AppleGothic, sans-serif; background: #f0f2f5; color: #333; min-height: 100vh; }
+    .container { max-width: 1060px; margin: 0 auto; padding: 24px 16px 60px; }
+
+    .doc-header { background: linear-gradient(135deg, #1a237e, #3949ab); color: white; border-radius: 10px; padding: 24px 28px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .doc-header h1 { font-size: 20px; font-weight: 700; }
+    .doc-header p  { font-size: 13px; opacity: 0.8; margin-top: 4px; }
+    .header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .header-btn { background: rgba(255,255,255,0.18); color: white; border: 1px solid rgba(255,255,255,0.4); border-radius: 6px; padding: 8px 16px; font-size: 13px; font-family: inherit; cursor: pointer; text-decoration: none; display: inline-block; white-space: nowrap; }
+    .header-btn:hover { background: rgba(255,255,255,0.28); }
+    .header-btn.excel { background: rgba(56,142,60,0.55); border-color: rgba(255,255,255,0.5); }
+    .header-btn.excel:hover { background: rgba(56,142,60,0.75); }
+
+    /* 통계 */
+    .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+    @media (max-width: 600px) { .stat-row { grid-template-columns: 1fr 1fr; } }
+    .stat-card { background: white; border-radius: 10px; padding: 18px 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
+    .stat-card .stat-label { font-size: 12px; color: #888; margin-bottom: 6px; }
+    .stat-card .stat-val   { font-size: 26px; font-weight: 700; color: #1a237e; }
+    .stat-card .stat-sub   { font-size: 12px; color: #aaa; margin-top: 2px; }
+
+    /* 검색 */
+    .search-bar { display: flex; gap: 8px; margin-bottom: 16px; }
+    .search-bar input { flex: 1; border: 1.5px solid #ddd; border-radius: 7px; padding: 9px 14px; font-size: 14px; font-family: inherit; }
+    .search-bar input:focus { outline: none; border-color: #3949ab; box-shadow: 0 0 0 3px rgba(57,73,171,0.1); }
+
+    /* 목록 테이블 */
+    .list-card { background: white; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); overflow: hidden; }
+    .list-header { display: grid; grid-template-columns: 100px 80px 1fr 1fr 80px 150px 88px; padding: 12px 20px; background: #f7f8fc; border-bottom: 2px solid #3949ab; font-size: 12px; font-weight: 700; color: #555; gap: 8px; }
+    @media (max-width: 760px) { .list-header { display: none; } }
+
+    .list-item { display: grid; grid-template-columns: 100px 80px 1fr 1fr 80px 150px 88px; padding: 13px 20px; border-bottom: 1px solid #f0f0f0; align-items: center; gap: 8px; transition: background 0.1s; }
+    .list-item:last-child { border-bottom: none; }
+    .list-item:hover { background: #f7f8fc; }
+    @media (max-width: 760px) {
+      .list-item { grid-template-columns: 1fr 1fr; gap: 6px; }
+      .list-item .col-empno::before { content: '사번: '; color: #aaa; font-size: 11px; }
+      .list-item .col-dept::before  { content: '부서: '; color: #aaa; font-size: 11px; }
+      .list-item .col-title::before { content: '직책: '; color: #aaa; font-size: 11px; }
+      .list-item .col-days::before  { content: '연차: '; color: #aaa; font-size: 11px; }
+      .list-item .col-date { font-size: 11px; color: #aaa; grid-column: 1 / -1; }
+    }
+
+    .list-item .col-name  { font-weight: 700; font-size: 14px; }
+    .list-item .col-empno { font-size: 12px; color: #777; font-family: monospace; }
+    .list-item .col-dept, .list-item .col-title { font-size: 13px; color: #555; }
+    .list-item .col-days  { font-size: 13px; font-weight: 700; color: #1a237e; }
+    .list-item .col-date  { font-size: 12px; color: #aaa; }
+    .list-item .col-action { display: flex; gap: 5px; }
+
+    .btn-view { background: #e8eaf6; color: #3949ab; border: none; border-radius: 5px; padding: 5px 10px; font-size: 12px; font-family: inherit; cursor: pointer; font-weight: 600; }
+    .btn-view:hover { background: #c5cae9; }
+    .btn-del  { background: #fce4e4; color: #c62828; border: none; border-radius: 5px; padding: 5px 8px; font-size: 12px; font-family: inherit; cursor: pointer; font-weight: 600; }
+    .btn-del:hover { background: #ef9a9a; color: white; }
+
+    .empty-state { text-align: center; padding: 60px 20px; color: #aaa; }
+    .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-state p { font-size: 14px; }
+    .loading { text-align: center; padding: 40px; color: #aaa; font-size: 14px; }
+
+    /* 모달 */
+    .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 100; align-items: center; justify-content: center; padding: 16px; }
+    .modal-backdrop.open { display: flex; }
+    .modal { background: white; border-radius: 12px; width: 100%; max-width: 700px; max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.18); }
+    .modal-header { background: linear-gradient(135deg, #1a237e, #3949ab); color: white; padding: 20px 24px; border-radius: 12px 12px 0 0; display: flex; justify-content: space-between; align-items: center; }
+    .modal-header h2 { font-size: 17px; }
+    .modal-close { background: none; border: none; color: white; font-size: 22px; cursor: pointer; opacity: 0.7; line-height: 1; }
+    .modal-close:hover { opacity: 1; }
+    .modal-body { padding: 24px; }
+
+    .detail-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+    @media (max-width: 500px) { .detail-grid { grid-template-columns: 1fr 1fr; } }
+    .detail-field { background: #f7f8fc; border-radius: 6px; padding: 10px 14px; }
+    .detail-field .label { font-size: 11px; color: #888; margin-bottom: 3px; }
+    .detail-field .value { font-size: 14px; font-weight: 700; color: #1a237e; }
+
+    .detail-dates-title { font-size: 13px; font-weight: 700; color: #333; margin-bottom: 10px; }
+    .detail-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; }
+    .detail-chip { background: #e8eaf6; color: #283593; border-radius: 16px; padding: 4px 12px; font-size: 12.5px; font-weight: 600; }
+
+    .sig-section h4 { font-size: 13px; font-weight: 700; color: #333; margin-bottom: 10px; }
+    .sig-img-wrap { border: 1px solid #e0e0e0; border-radius: 8px; background: #fafafa; padding: 12px; text-align: center; }
+    .sig-img-wrap img { max-width: 100%; height: auto; border-radius: 4px; background: white; }
+    .no-sig { color: #aaa; font-size: 13px; padding: 20px 0; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="doc-header">
+    <div>
+      <h1>연차촉진 사용계획서 — 제출 내역</h1>
+      <p>2026년 하반기 연차 사용 계획 제출 현황</p>
+    </div>
+    <div class="header-actions">
+      <button class="header-btn excel" onclick="downloadExcel()">&#128190; 엑셀 다운로드</button>
+      <a class="header-btn" href="/annual-leave">+ 새 계획서 작성</a>
+    </div>
+  </div>
+
+  <!-- 통계 -->
+  <div class="stat-row">
+    <div class="stat-card">
+      <div class="stat-label">총 제출 인원</div>
+      <div class="stat-val" id="statTotal">—</div>
+      <div class="stat-sub">명</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">총 연차 신청일</div>
+      <div class="stat-val" id="statDays">—</div>
+      <div class="stat-sub">일</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">평균 연차 일수</div>
+      <div class="stat-val" id="statAvg">—</div>
+      <div class="stat-sub">일 / 인</div>
+    </div>
+  </div>
+
+  <!-- 검색 -->
+  <div class="search-bar">
+    <input type="text" id="searchInput" placeholder="사원번호, 이름, 부서로 검색…" oninput="renderList()">
+  </div>
+
+  <!-- 목록 -->
+  <div class="list-card">
+    <div class="list-header">
+      <span>성명</span><span>사원번호</span><span>부서</span><span>직책</span><span>연차일수</span><span>제출일시</span><span>관리</span>
+    </div>
+    <div id="listBody"><div class="loading">불러오는 중…</div></div>
+  </div>
+
+</div>
+
+<!-- 상세 모달 -->
+<div class="modal-backdrop" id="modal" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modalTitle">상세 내용</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+  const DOW = ['일','월','화','수','목','금','토'];
+  const TYPE_LABEL = { full: '전일', am: '오전반차', pm: '오후반차' };
+  let allData = [];
+
+  // dates 항목이 구버전 string이면 {date, type:'full'}로 정규화
+  function normalizeDates(dates) {
+    return (dates || []).map(d =>
+      typeof d === 'string' ? { date: d, type: 'full' } : d
+    );
+  }
+
+  function calcDays(dates) {
+    return dates.reduce((s, d) => s + (d.type === 'full' ? 1 : 0.5), 0);
+  }
+
+  async function loadData() {
+    try {
+      const res = await fetch('/api/leave-plans');
+      const raw = await res.json();
+      allData = raw.map(r => ({ ...r, dates: normalizeDates(r.dates) }));
+      updateStats();
+      renderList();
+    } catch (e) {
+      document.getElementById('listBody').innerHTML =
+        '<div class="loading" style="color:#c62828">데이터를 불러오지 못했습니다.</div>';
+    }
+  }
+
+  function updateStats() {
+    const total = allData.length;
+    const totalDays = allData.reduce((s, r) => s + calcDays(r.dates), 0);
+    document.getElementById('statTotal').textContent = total;
+    document.getElementById('statDays').textContent = totalDays % 1 === 0 ? totalDays : totalDays.toFixed(1);
+    document.getElementById('statAvg').textContent = total ? (totalDays / total).toFixed(1) : '—';
+  }
+
+  function renderList() {
+    const q = document.getElementById('searchInput').value.trim().toLowerCase();
+    const filtered = allData.filter(r =>
+      r.name.toLowerCase().includes(q) ||
+      (r.dept || '').toLowerCase().includes(q) ||
+      (r.emp_no || '').toLowerCase().includes(q)
+    );
+
+    const body = document.getElementById('listBody');
+    if (filtered.length === 0) {
+      body.innerHTML = `<div class="empty-state"><div class="icon">📋</div><p>${q ? '검색 결과가 없습니다.' : '아직 제출된 계획서가 없습니다.'}</p></div>`;
+      return;
+    }
+
+    body.innerHTML = filtered.map(r => {
+      const dt = new Date(r.submittedAt).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+      const days = calcDays(r.dates);
+      const daysStr = days % 1 === 0 ? `${days}일` : `${days}일`;
+      return `
+        <div class="list-item">
+          <span class="col-name">${esc(r.name)}</span>
+          <span class="col-empno">${esc(r.emp_no) || '—'}</span>
+          <span class="col-dept">${esc(r.dept) || '—'}</span>
+          <span class="col-title">${esc(r.title) || '—'}</span>
+          <span class="col-days">${daysStr}</span>
+          <span class="col-date">${dt}</span>
+          <span class="col-action">
+            <button class="btn-view" onclick="openDetail('${r.id}')">상세</button>
+            <button class="btn-del"  onclick="deletePlan('${r.id}', '${esc(r.name)}')">삭제</button>
+          </span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  /* ── 상세 모달 ── */
+  function openDetail(id) {
+    const r = allData.find(x => x.id === id);
+    if (!r) return;
+
+    document.getElementById('modalTitle').textContent = `${r.name} — 연차 사용 계획`;
+
+    const dt   = new Date(r.submittedAt).toLocaleString('ko-KR');
+    const days = calcDays(r.dates);
+
+    const CHIP_STYLE = {
+      full: 'background:#1565c0;color:white',
+      am:   'background:#bbdefb;color:#0d47a1',
+      pm:   'background:#ffe0b2;color:#bf360c',
+    };
+    const SUFFIX = { full: '', am: ' 오전', pm: ' 오후' };
+
+    const chipsByType = ['full','am','pm'].map(t => {
+      const group = r.dates.filter(d => d.type === t);
+      if (!group.length) return '';
+      const label = TYPE_LABEL[t];
+      const items = group.map(({ date }) => {
+        const [y, m, d2] = date.split('-').map(Number);
+        const dow = new Date(y, m - 1, d2).getDay();
+        return `<span style="${CHIP_STYLE[t]};border-radius:16px;padding:4px 11px;font-size:12px;font-weight:600;display:inline-block">${m}/${d2}(${DOW[dow]})${SUFFIX[t]}</span>`;
+      }).join('');
+      return `<div style="margin-bottom:10px"><div style="font-size:12px;font-weight:700;color:#555;margin-bottom:5px">${label} (${group.length}${t==='full'?'일':'회'})</div><div style="display:flex;flex-wrap:wrap;gap:5px">${items}</div></div>`;
+    }).join('');
+
+    const sigHtml = r.signature
+      ? `<div class="sig-img-wrap"><img src="${r.signature}" alt="서명"></div>`
+      : `<div class="sig-img-wrap"><p class="no-sig">서명 이미지 없음</p></div>`;
+
+    document.getElementById('modalBody').innerHTML = `
+      <div class="detail-grid">
+        <div class="detail-field"><div class="label">사원번호</div><div class="value" style="font-family:monospace">${esc(r.emp_no) || '—'}</div></div>
+        <div class="detail-field"><div class="label">성명</div><div class="value">${esc(r.name)}</div></div>
+        <div class="detail-field"><div class="label">부서</div><div class="value">${esc(r.dept) || '—'}</div></div>
+        <div class="detail-field"><div class="label">직책</div><div class="value">${esc(r.title) || '—'}</div></div>
+      </div>
+      <div style="font-size:14px;font-weight:700;color:#1a237e;margin-bottom:12px">연차 합계 ${days}일</div>
+      ${chipsByType || '<span style="color:#aaa;font-size:13px">선택된 날짜 없음</span>'}
+      <div class="sig-section" style="margin-top:8px">
+        <h4>서명</h4>
+        ${sigHtml}
+      </div>
+      <div style="font-size:12px;color:#aaa;margin-top:16px">제출일시: ${dt}</div>
+    `;
+
+    document.getElementById('modal').classList.add('open');
+  }
+
+  function closeModal(e) {
+    if (!e || e.target === document.getElementById('modal')) {
+      document.getElementById('modal').classList.remove('open');
+    }
+  }
+
+  /* ── 삭제 ── */
+  async function deletePlan(id, name) {
+    if (!confirm(`"${name}"의 계획서를 삭제하시겠습니까?`)) return;
+    try {
+      await fetch(`/api/leave-plans/${id}`, { method: 'DELETE' });
+      allData = allData.filter(r => r.id !== id);
+      updateStats();
+      renderList();
+    } catch (e) {
+      alert('삭제에 실패했습니다.');
+    }
+  }
+
+  /* ── 엑셀 다운로드 ── */
+  function downloadExcel() {
+    if (allData.length === 0) { alert('다운로드할 데이터가 없습니다.'); return; }
+
+    // ── 시트1: 요약 (1행 = 1인) ──
+    const summaryRows = allData.map(r => {
+      const full = r.dates.filter(d => d.type === 'full');
+      const am   = r.dates.filter(d => d.type === 'am');
+      const pm   = r.dates.filter(d => d.type === 'pm');
+      return {
+        '사원번호':     r.emp_no || '',
+        '성명':         r.name,
+        '부서':         r.dept || '',
+        '직책':         r.title || '',
+        '연차 합계(일)': calcDays(r.dates),
+        '전일연차(일)':  full.length,
+        '오전반차(회)':  am.length,
+        '오후반차(회)':  pm.length,
+        '전일연차 날짜': full.map(d => d.date).join(', '),
+        '오전반차 날짜': am.map(d => d.date).join(', '),
+        '오후반차 날짜': pm.map(d => d.date).join(', '),
+        '제출일시':      new Date(r.submittedAt).toLocaleString('ko-KR'),
+      };
+    });
+
+    // ── 시트2: 날짜별 상세 (1행 = 1일) ──
+    const detailRows = [];
+    allData.forEach(r => {
+      r.dates.sort((a, b) => a.date.localeCompare(b.date)).forEach(({ date, type }) => {
+        const [y, m, d] = date.split('-').map(Number);
+        const dow = new Date(y, m - 1, d).getDay();
+        detailRows.push({
+          '사원번호': r.emp_no || '',
+          '성명':     r.name,
+          '부서':     r.dept || '',
+          '직책':     r.title || '',
+          '날짜':     date,
+          '요일':     DOW[dow],
+          '구분':     TYPE_LABEL[type] || type,
+          '차감일수': type === 'full' ? 1 : 0.5,
+          '제출일시': new Date(r.submittedAt).toLocaleString('ko-KR'),
+        });
+      });
+    });
+
+    const wb = XLSX.utils.book_new();
+
+    const ws1 = XLSX.utils.json_to_sheet(summaryRows);
+    setColWidths(ws1, [14, 10, 14, 10, 14, 12, 12, 12, 40, 40, 40, 20]);
+    XLSX.utils.book_append_sheet(wb, ws1, '제출 요약');
+
+    const ws2 = XLSX.utils.json_to_sheet(detailRows);
+    setColWidths(ws2, [14, 10, 14, 10, 14, 6, 10, 10, 20]);
+    XLSX.utils.book_append_sheet(wb, ws2, '날짜별 상세');
+
+    const today = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(wb, `연차촉진_사용계획서_${today}.xlsx`);
+  }
+
+  function setColWidths(ws, widths) {
+    ws['!cols'] = widths.map(w => ({ wch: w }));
+  }
+
+  function esc(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  loadData();
+</script>
+</body>
+</html>

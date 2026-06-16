@@ -28,6 +28,24 @@ async function initDb() {
   `);
 
   await db.execute(`
+    CREATE TABLE IF NOT EXISTS leave_plans (
+      id          TEXT PRIMARY KEY,
+      emp_no      TEXT NOT NULL DEFAULT '',
+      name        TEXT NOT NULL,
+      dept        TEXT NOT NULL DEFAULT '',
+      title       TEXT NOT NULL DEFAULT '',
+      dates       TEXT NOT NULL DEFAULT '[]',
+      signature   TEXT NOT NULL DEFAULT '',
+      submittedAt TEXT NOT NULL
+    )
+  `);
+
+  // 기존 테이블에 emp_no 컬럼 추가 (이미 있으면 무시)
+  try {
+    await db.execute(`ALTER TABLE leave_plans ADD COLUMN emp_no TEXT NOT NULL DEFAULT ''`);
+  } catch (_) {}
+
+  await db.execute(`
     CREATE TABLE IF NOT EXISTS notes (
       id          TEXT PRIMARY KEY,
       notebookId  TEXT NOT NULL,
@@ -189,6 +207,59 @@ app.put('/api/notes/:id', async (req, res) => {
 app.delete('/api/notes/:id', async (req, res) => {
   try {
     await db.execute({ sql: 'DELETE FROM notes WHERE id = ?', args: [req.params.id] });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── 연차촉진 사용계획서 ──────────────────────────────────────────────
+
+app.get('/annual-leave', (req, res) => {
+  res.sendFile(path.join(__dirname, 'annual-leave-plan.html'));
+});
+
+app.get('/annual-leave/submissions', (req, res) => {
+  res.sendFile(path.join(__dirname, 'annual-leave-submissions.html'));
+});
+
+app.post('/api/leave-plans', async (req, res) => {
+  try {
+    const { emp_no, name, dept, title, dates, signature } = req.body;
+    if (!name?.trim()) return res.status(400).json({ error: '성명이 필요합니다' });
+    const plan = {
+      id: uuidv4(),
+      emp_no: (emp_no || '').trim(),
+      name: name.trim(),
+      dept: (dept || '').trim(),
+      title: (title || '').trim(),
+      dates: JSON.stringify(dates || []),
+      signature: signature || '',
+      submittedAt: new Date().toISOString(),
+    };
+    await db.execute({
+      sql: `INSERT INTO leave_plans (id, emp_no, name, dept, title, dates, signature, submittedAt)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [plan.id, plan.emp_no, plan.name, plan.dept, plan.title, plan.dates, plan.signature, plan.submittedAt],
+    });
+    res.json({ id: plan.id, submittedAt: plan.submittedAt });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/leave-plans', async (req, res) => {
+  try {
+    const { rows } = await db.execute('SELECT * FROM leave_plans ORDER BY submittedAt DESC');
+    res.json(rows.map(r => ({ ...r, dates: JSON.parse(r.dates || '[]') })));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/leave-plans/:id', async (req, res) => {
+  try {
+    await db.execute({ sql: 'DELETE FROM leave_plans WHERE id = ?', args: [req.params.id] });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
