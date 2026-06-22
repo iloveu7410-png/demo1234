@@ -229,47 +229,28 @@ async function duallFetch(path, params = {}) {
   return res.json();
 }
 
-function calcTotalLeaveDays(hireDateStr) {
-  if (!hireDateStr) return 15;
-  const hire = new Date(hireDateStr);
-  const now = new Date();
-  const yearsWorked = (now - hire) / (365.25 * 24 * 60 * 60 * 1000);
-  if (yearsWorked < 1) return Math.min(Math.floor(yearsWorked * 12), 11);
-  return Math.min(15 + Math.floor((yearsWorked - 1) / 2), 25);
-}
-
 app.get('/api/employee-info/:empNo', async (req, res) => {
   try {
     const { empNo } = req.params;
-    const year = new Date().getFullYear();
+    const today = new Date().toISOString().slice(0, 10);
 
-    const [employees, leaves, locations] = await Promise.all([
-      duallFetch('/employee/all'),
-      duallFetch('/leave/all', { from: `${year}-01-01`, to: `${year}-12-31` }),
-      duallFetch('/location/all'),
-    ]);
-
-    const emp = employees.find(e => e.employee_number === empNo && e.active);
+    // 출퇴근 직원 목록에서 empId 조회
+    const employees = await duallFetch('/attendance/employees');
+    const emp = employees.find(e => String(e.empNo).trim() === empNo);
     if (!emp) return res.status(404).json({ error: '사원번호를 찾을 수 없습니다.' });
 
-    const loc = locations.find(l => l.location_code === emp.main_location_code);
-    const dept = loc ? loc.name : (emp.main_location_code || '');
-
-    const annualLeaves = leaves.filter(l =>
-      l.employee_number === empNo && l.display_name.includes('연차')
-    );
-    const usedDays = annualLeaves.reduce((s, l) => s + (Number(l.deduction_amount) || 0), 0);
-    const totalDays = calcTotalLeaveDays(emp.date_of_employement);
-    const remainingDays = Math.max(0, totalDays - usedDays);
+    // 잔여연차 직접 조회 (Duall 시스템 계산값 그대로 사용)
+    const leaveBalances = await duallFetch(`/attendance/employee/${emp.empId}/leave-balance`, { date: today });
+    const annual = leaveBalances.find(l => l.vacationGroupName && l.vacationGroupName.includes('연차'));
 
     res.json({
-      employee_number: emp.employee_number,
-      name: emp.first_name,
-      dept,
-      position: emp.main_position_name || '',
-      totalDays,
-      usedDays: Math.round(usedDays * 10) / 10,
-      remainingDays: Math.round(remainingDays * 10) / 10,
+      employee_number: emp.empNo,
+      name: emp.empNm,
+      dept: emp.orgNm || '',
+      position: emp.posNm || '',
+      totalDays: annual ? annual.totalDays : 0,
+      usedDays: annual ? annual.usedDays : 0,
+      remainingDays: annual ? annual.remainingDays : 0,
     });
   } catch (err) {
     console.error('[employee-info]', err.message);
