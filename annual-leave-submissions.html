@@ -103,7 +103,7 @@
     </div>
     <div class="header-actions">
       <button class="header-btn excel" onclick="downloadExcel()">&#128190; 엑셀 다운로드</button>
-      <a class="header-btn" href="/annual-leave">+ 새 계획서 작성</a>
+      <a class="header-btn" href="/annual-leave-plan.html">+ 새 계획서 작성</a>
     </div>
   </div>
 
@@ -170,7 +170,7 @@
 
   async function loadData() {
     try {
-      const res = await fetch('/api/leave-plans');
+      const res = await fetch('https://memo-app-6iib.onrender.com/api/leave-plans');
       const raw = await res.json();
       allData = raw.map(r => ({ ...r, dates: normalizeDates(r.dates) }));
       updateStats();
@@ -286,7 +286,7 @@
   async function deletePlan(id, name) {
     if (!confirm(`"${name}"의 계획서를 삭제하시겠습니까?`)) return;
     try {
-      await fetch(`/api/leave-plans/${id}`, { method: 'DELETE' });
+      await fetch(`https://memo-app-6iib.onrender.com/api/leave-plans/${id}`, { method: 'DELETE' });
       allData = allData.filter(r => r.id !== id);
       updateStats();
       renderList();
