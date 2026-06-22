@@ -554,7 +554,7 @@
     submitBtn.textContent = '제출 중…';
 
     try {
-      const res = await fetch('/api/leave-plans', {
+      const res = await fetch('https://memo-app-6iib.onrender.com/api/leave-plans', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ emp_no: empNo, name, dept, title, dates, signature }),
