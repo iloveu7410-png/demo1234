@@ -213,6 +213,70 @@ app.delete('/api/notes/:id', async (req, res) => {
   }
 });
 
+// ── 근태시스템 연동 ───────────────────────────────────────────────────
+
+const DUALL_API = 'https://atdapi.duallmaster.com';
+
+async function duallFetch(path, params = {}) {
+  const token = process.env.DUALL_TOKEN;
+  if (!token) throw new Error('DUALL_TOKEN이 설정되지 않았습니다.');
+  const url = new URL(DUALL_API + path);
+  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+  const res = await fetch(url.toString(), {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  if (!res.ok) throw new Error(`근태시스템 오류 (${res.status})`);
+  return res.json();
+}
+
+function calcTotalLeaveDays(hireDateStr) {
+  if (!hireDateStr) return 15;
+  const hire = new Date(hireDateStr);
+  const now = new Date();
+  const yearsWorked = (now - hire) / (365.25 * 24 * 60 * 60 * 1000);
+  if (yearsWorked < 1) return Math.min(Math.floor(yearsWorked * 12), 11);
+  return Math.min(15 + Math.floor((yearsWorked - 1) / 2), 25);
+}
+
+app.get('/api/employee-info/:empNo', async (req, res) => {
+  try {
+    const { empNo } = req.params;
+    const year = new Date().getFullYear();
+
+    const [employees, leaves, locations] = await Promise.all([
+      duallFetch('/employee/all'),
+      duallFetch('/leave/all', { from: `${year}-01-01`, to: `${year}-12-31` }),
+      duallFetch('/location/all'),
+    ]);
+
+    const emp = employees.find(e => e.employee_number === empNo && e.active);
+    if (!emp) return res.status(404).json({ error: '사원번호를 찾을 수 없습니다.' });
+
+    const loc = locations.find(l => l.location_code === emp.main_location_code);
+    const dept = loc ? loc.name : (emp.main_location_code || '');
+
+    const annualLeaves = leaves.filter(l =>
+      l.employee_number === empNo && l.display_name.includes('연차')
+    );
+    const usedDays = annualLeaves.reduce((s, l) => s + (Number(l.deduction_amount) || 0), 0);
+    const totalDays = calcTotalLeaveDays(emp.date_of_employement);
+    const remainingDays = Math.max(0, totalDays - usedDays);
+
+    res.json({
+      employee_number: emp.employee_number,
+      name: emp.first_name,
+      dept,
+      position: emp.main_position_name || '',
+      totalDays,
+      usedDays: Math.round(usedDays * 10) / 10,
+      remainingDays: Math.round(remainingDays * 10) / 10,
+    });
+  } catch (err) {
+    console.error('[employee-info]', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── 연차촉진 사용계획서 ──────────────────────────────────────────────
 
 app.get('/annual-leave', (req, res) => {
