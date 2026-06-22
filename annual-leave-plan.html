@@ -559,7 +559,11 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ emp_no: empNo, name, dept, title, dates, signature }),
       });
-      if (!res.ok) throw new Error((await res.json()).error || '서버 오류');
+      if (!res.ok) {
+        let msg = '서버 오류';
+        try { msg = (await res.json()).error || msg; } catch (_) { msg = `서버 오류 (${res.status})`; }
+        throw new Error(msg);
+      }
       const data = await res.json();
 
       const { total, full, am, pm } = calcTotal();

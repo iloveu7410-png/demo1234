@@ -219,6 +219,10 @@ app.get('/annual-leave', (req, res) => {
   res.sendFile(path.join(__dirname, 'annual-leave-plan.html'));
 });
 
+app.get('/annual-leave-plan.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'annual-leave-plan.html'));
+});
+
 app.get('/annual-leave/submissions', (req, res) => {
   res.sendFile(path.join(__dirname, 'annual-leave-submissions.html'));
 });
