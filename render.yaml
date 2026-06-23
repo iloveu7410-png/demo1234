@@ -9,4 +9,12 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      
+
+  - type: web
+    name: exit-interview
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node exit-interview-server.js
+    healthCheckPath: /exit-interview-dashboard
+
