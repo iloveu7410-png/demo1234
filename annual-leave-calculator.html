@@ -445,8 +445,8 @@ function render() {
   const fiscal = calcFiscalYearBasis(hireDate, today);
   const anniv  = calcAnniversaryBasis(hireDate, today);
 
-  const fiscalRemain = Math.max(0, fiscal.currentYearDays - usedDays);
-  const anniversaryRemain = Math.max(0, anniv.currentDays - usedDays);
+  const fiscalRemain = fiscal.currentYearDays - usedDays;
+  const anniversaryRemain = anniv.currentDays - usedDays;
 
   const fiscalShort = fiscal.currentYearDays < usedDays;
   const anniversaryShort = anniv.currentDays < usedDays;
