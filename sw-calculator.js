@@ -1,4 +1,4 @@
-const CACHE = 'leave-calc-v1';
+const CACHE = 'leave-calc-v2';
 const URLS = ['/annual-leave-calculator.html', '/manifest-calculator.json'];
 
 self.addEventListener('install', e => {
