@@ -284,6 +284,14 @@ app.get('/manifest-calculator.json', (req, res) => {
   res.sendFile(path.join(__dirname, 'manifest-calculator.json'));
 });
 
+app.get('/sw-calculator.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.sendFile(path.join(__dirname, 'sw-calculator.js'));
+});
+
+app.get('/icon-calculator-192.png', (req, res) => res.sendFile(path.join(__dirname, 'icon-calculator-192.png')));
+app.get('/icon-calculator-512.png', (req, res) => res.sendFile(path.join(__dirname, 'icon-calculator-512.png')));
+
 app.post('/api/leave-plans', async (req, res) => {
   try {
     const { emp_no, name, dept, title, dates, signature } = req.body;

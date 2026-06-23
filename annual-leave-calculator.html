@@ -556,6 +556,10 @@ document.getElementById('usedDays').addEventListener('input', render);
 
 // 초기 렌더
 render();
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw-calculator.js');
+}
 </script>
 </body>
 </html>
