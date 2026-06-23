@@ -272,6 +272,10 @@ app.get('/annual-leave/submissions', (req, res) => {
   res.sendFile(path.join(__dirname, 'annual-leave-submissions.html'));
 });
 
+app.get('/leave-calculator', (req, res) => {
+  res.sendFile(path.join(__dirname, 'annual-leave-calculator.html'));
+});
+
 app.post('/api/leave-plans', async (req, res) => {
   try {
     const { emp_no, name, dept, title, dates, signature } = req.body;

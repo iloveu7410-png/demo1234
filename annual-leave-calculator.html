@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>신규입사자 연차 계산기</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Malgun Gothic', '맑은 고딕', AppleGothic, sans-serif;
+      background: #f0f2f5; color: #333; min-height: 100vh;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .container { max-width: 880px; margin: 0 auto; padding: 24px 16px 60px; }
+
+    .doc-header {
+      background: linear-gradient(135deg, #1a237e, #3949ab);
+      color: white; border-radius: 12px; padding: 28px 32px; margin-bottom: 20px;
+    }
+    .doc-header h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+    .doc-header p  { font-size: 13px; opacity: 0.8; margin-top: 4px; }
+    .doc-header .law-note { font-size: 11px; opacity: 0.6; margin-top: 6px; }
+
+    .card {
+      background: white; border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-bottom: 16px; overflow: hidden;
+    }
+    .card-header {
+      background: #f7f8fc; border-bottom: 2px solid #3949ab;
+      padding: 14px 20px; display: flex; align-items: center; gap: 8px;
+    }
+    .card-header h3 { font-size: 15px; font-weight: 700; color: #1a237e; }
+    .card-body { padding: 20px; }
+
+    /* 입력 영역 */
+    .input-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+    }
+    @media (max-width: 480px) { .input-grid { grid-template-columns: 1fr; } }
+    .form-group label {
+      display: block; font-size: 12px; color: #555; margin-bottom: 6px; font-weight: 600;
+    }
+    .form-group input {
+      width: 100%; border: 1.5px solid #ddd; border-radius: 8px;
+      padding: 10px 14px; font-size: 15px; font-family: inherit;
+      transition: border-color 0.2s;
+    }
+    .form-group input:focus { outline: none; border-color: #3949ab; box-shadow: 0 0 0 3px rgba(57,73,171,0.1); }
+    .form-group .hint { font-size: 11px; color: #999; margin-top: 4px; }
+
+    /* 결과 카드 2열 */
+    .result-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px;
+    }
+    @media (max-width: 580px) { .result-grid { grid-template-columns: 1fr; } }
+
+    .result-card {
+      border-radius: 10px; overflow: hidden;
+      border: 1.5px solid #e0e0e0;
+    }
+    .result-card .rc-header {
+      padding: 12px 16px; font-size: 13px; font-weight: 700;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .result-card.fiscal .rc-header  { background: #e8eaf6; color: #1a237e; }
+    .result-card.anniv .rc-header   { background: #e8f5e9; color: #1b5e20; }
+
+    .result-card .rc-body { padding: 16px; }
+    .stat-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 0; border-bottom: 1px solid #f0f0f0;
+    }
+    .stat-row:last-child { border-bottom: none; }
+    .stat-label { font-size: 12px; color: #666; }
+    .stat-value { font-size: 15px; font-weight: 700; color: #333; }
+    .stat-value.accent { color: #3949ab; font-size: 18px; }
+    .stat-value.green  { color: #2e7d32; font-size: 18px; }
+    .stat-value.red    { color: #c62828; font-size: 18px; }
+
+    .remaining-big {
+      text-align: center; padding: 16px 0 8px;
+      border-top: 2px dashed #e0e0e0; margin-top: 10px;
+    }
+    .remaining-big .rb-label { font-size: 11px; color: #888; margin-bottom: 4px; }
+    .remaining-big .rb-value { font-size: 32px; font-weight: 800; }
+    .remaining-big .rb-unit  { font-size: 14px; font-weight: 400; color: #777; margin-left: 2px; }
+
+    /* 상세 테이블 */
+    .detail-toggle {
+      width: 100%; background: none; border: none; cursor: pointer;
+      padding: 10px 20px; text-align: left;
+      font-size: 12px; color: #3949ab; font-family: inherit;
+      border-top: 1px solid #eee; display: flex; align-items: center; gap: 6px;
+    }
+    .detail-toggle:hover { background: #f7f8fc; }
+    .detail-section { display: none; padding: 0 20px 16px; overflow-x: auto; }
+    .detail-section.open { display: block; }
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 480px; }
+    th { background: #f7f8fc; padding: 8px 10px; text-align: left; color: #555; font-weight: 600; border-bottom: 2px solid #e0e0e0; }
+    td { padding: 8px 10px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+    tr.current-row td { background: #fff8e1; }
+    tr.past-row td { color: #aaa; }
+    .badge {
+      display: inline-block; font-size: 10px; padding: 2px 6px;
+      border-radius: 10px; font-weight: 600; vertical-align: middle;
+    }
+    .badge.now  { background: #fff3cd; color: #856404; }
+    .badge.done { background: #f0f0f0; color: #888; }
+
+    /* 연차 발생 기준 설명 */
+    .notice {
+      background: #e8eaf6; border-left: 4px solid #3949ab;
+      border-radius: 4px; padding: 12px 16px; font-size: 12px;
+      color: #333; line-height: 1.8; margin-top: 12px;
+    }
+    .notice strong { color: #1a237e; }
+    .notice-green {
+      background: #e8f5e9; border-left-color: #2e7d32;
+    }
+    .notice-green strong { color: #1b5e20; }
+
+    /* 빈 상태 */
+    .empty-state {
+      text-align: center; padding: 48px 20px; color: #aaa;
+    }
+    .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-state p { font-size: 14px; }
+
+    .tag { display: inline-block; font-size: 10px; background: #3949ab; color: white; border-radius: 4px; padding: 2px 6px; margin-left: 6px; vertical-align: middle; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- 헤더 -->
+  <div class="doc-header">
+    <h1>신규입사자 연차 계산기</h1>
+    <p>입사일자와 사용 연차를 입력하면 잔여연차를 자동으로 계산합니다.</p>
+    <p class="law-note">근로기준법 제60조 기준 · 회계연도(1.1~12.31) 기준 및 입사일자 기준 모두 제공</p>
+  </div>
+
+  <!-- 입력 카드 -->
+  <div class="card">
+    <div class="card-header"><h3>입력 정보</h3></div>
+    <div class="card-body">
+      <div class="input-grid">
+        <div class="form-group">
+          <label>입사일자</label>
+          <input type="text" id="hireDate" placeholder="20260101" maxlength="10" inputmode="numeric" />
+          <div class="hint" id="hireDateHint">YYYYMMDD 또는 YYYY-MM-DD 형식으로 입력</div>
+        </div>
+        <div class="form-group">
+          <label>사용한 연차 (일)</label>
+          <input type="number" id="usedDays" min="0" max="99" value="0" placeholder="0" />
+          <div class="hint">현재까지 사용한 연차 일수를 입력하세요</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 결과 영역 -->
+  <div id="resultArea">
+    <div class="empty-state">
+      <div class="icon">📅</div>
+      <p>입사일자를 선택하면 연차가 계산됩니다</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── 유틸리티 ─────────────────────────────────────────────
+function parseDate(str) {
+  const s = str.replace(/[.\-\/\s]/g, '');
+  if (s.length === 8 && /^\d{8}$/.test(s)) {
+    const y = +s.slice(0, 4), m = +s.slice(4, 6), d = +s.slice(6, 8);
+    if (m >= 1 && m <= 12 && d >= 1 && d <= 31) return new Date(y, m - 1, d);
+  }
+  return null;
+}
+function formatDate(d) {
+  return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+}
+function addYears(d, n) {
+  const r = new Date(d); r.setFullYear(r.getFullYear() + n); return r;
+}
+function addDays(d, n) {
+  const r = new Date(d); r.setDate(r.getDate() + n); return r;
+}
+
+// d1 → d2 완성된 개월 수 (d1의 날짜 기준)
+function completedMonths(d1, d2) {
+  let m = (d2.getFullYear() - d1.getFullYear()) * 12 + (d2.getMonth() - d1.getMonth());
+  if (d2.getDate() < d1.getDate()) m--;
+  return Math.max(0, m);
+}
+
+// 근속 완성 년수 기준 연간 발생 연차
+function annualEntitlement(completeYears) {
+  if (completeYears < 1) return 0;
+  return Math.min(25, 15 + Math.floor((completeYears - 1) / 2));
+}
+
+// ── 입사일자 기준 계산 ─────────────────────────────────────
+function calcAnniversaryBasis(hireDate, today) {
+  const rows = [];
+
+  // 1년차 기간 (입사일 ~ 입사 1주년 전날)
+  const anniv1 = addYears(hireDate, 1);
+  const yr1End = addDays(anniv1, -1);
+  const isFirstYear = today < anniv1;
+
+  // 1년차: 월 단위 발생
+  const monthsToAnniv = completedMonths(hireDate, anniv1); // 항상 12
+  const yr1Total = Math.min(monthsToAnniv, 11); // 최대 11일
+  const yr1Accrued = isFirstYear
+    ? Math.min(completedMonths(hireDate, today), 11)
+    : yr1Total;
+
+  rows.push({
+    period: `${formatDate(hireDate)} ~ ${formatDate(yr1End)}`,
+    label: '1년차',
+    basis: '월단위 발생 (1개월 = 1일)',
+    total: 11,
+    accrued: yr1Accrued,
+    isCurrent: isFirstYear,
+    isPast: !isFirstYear,
+  });
+
+  // 2년차 이후
+  for (let y = 1; y <= 30; y++) {
+    const pStart = addYears(hireDate, y);
+    if (pStart > today) break;
+    const pEnd = addDays(addYears(hireDate, y + 1), -1);
+    const days = annualEntitlement(y);
+    const isCurrent = pStart <= today && today <= pEnd;
+
+    rows.push({
+      period: `${formatDate(pStart)} ~ ${formatDate(pEnd)}`,
+      label: `${y + 1}년차`,
+      basis: `근속 ${y}년 → ${days}일 일괄 부여`,
+      total: days,
+      accrued: days,
+      isCurrent,
+      isPast: pEnd < today,
+    });
+  }
+
+  const curr = rows.find(r => r.isCurrent) || rows[rows.length - 1];
+  return { rows, currentDays: curr ? curr.accrued : 0, currentRow: curr };
+}
+
+// ── 회계년도 기준 계산 ─────────────────────────────────────
+function calcFiscalYearBasis(hireDate, today) {
+  const rows = [];
+  const hireYear = hireDate.getFullYear();
+  const todayYear = today.getFullYear();
+  let currentYearDays = 0;
+
+  for (let y = hireYear; y <= todayYear; y++) {
+    const jan1 = new Date(y, 0, 1);
+    const dec31 = new Date(y, 11, 31);
+    const jan1Next = new Date(y + 1, 0, 1);
+    const isCurrent = y === todayYear;
+    const isPast = y < todayYear;
+
+    let days, basis;
+
+    const isHireYear = hireDate.getFullYear() === y && hireDate >= jan1;
+    if (isHireYear) {
+      // 입사 연도: 입사월부터 연말까지 월단위 발생
+      const mToYearEnd = completedMonths(hireDate, jan1Next);
+      days = Math.min(mToYearEnd, 11);
+      basis = `입사월부터 ${mToYearEnd}개월 → ${days}일 (월단위)`;
+      if (isCurrent) {
+        currentYearDays = Math.min(completedMonths(hireDate, today), 11);
+      } else {
+        currentYearDays = days;
+      }
+    } else {
+      const mAtJan1 = completedMonths(hireDate, jan1);
+      const completeYrs = Math.floor(mAtJan1 / 12);
+
+      if (mAtJan1 < 12) {
+        // 1월1일 기준 1년 미만: 비례 부여
+        days = Math.ceil(mAtJan1 / 12 * 15);
+        basis = `1.1 기준 ${mAtJan1}개월 → ⌈${mAtJan1}/12 × 15⌉ = ${days}일`;
+      } else {
+        days = annualEntitlement(completeYrs);
+        basis = `1.1 기준 근속 ${completeYrs}년 → ${days}일`;
+      }
+      if (isCurrent) currentYearDays = days;
+    }
+
+    rows.push({
+      period: `${y}.01.01 ~ ${y}.12.31`,
+      label: `${y}년`,
+      basis,
+      days,
+      isCurrent,
+      isPast,
+    });
+  }
+
+  return { rows, currentYearDays };
+}
+
+// ── 렌더링 ─────────────────────────────────────────────────
+function render() {
+  const hireDateRaw = document.getElementById('hireDate').value.trim();
+  const usedDays = Math.max(0, Number(document.getElementById('usedDays').value) || 0);
+  const area = document.getElementById('resultArea');
+  const hint = document.getElementById('hireDateHint');
+  const input = document.getElementById('hireDate');
+
+  if (!hireDateRaw) {
+    input.style.borderColor = '';
+    hint.textContent = 'YYYYMMDD 또는 YYYY-MM-DD 형식으로 입력';
+    hint.style.color = '';
+    area.innerHTML = `<div class="empty-state"><div class="icon">📅</div><p>입사일자를 입력하면 연차가 계산됩니다</p></div>`;
+    return;
+  }
+
+  const hireDate = parseDate(hireDateRaw);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+
+  if (!hireDate || isNaN(hireDate.getTime())) {
+    input.style.borderColor = '#c62828';
+    hint.textContent = '날짜 형식이 올바르지 않습니다 (예: 20260101)';
+    hint.style.color = '#c62828';
+    area.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><p>날짜 형식을 확인해주세요 (예: 20260101)</p></div>`;
+    return;
+  }
+
+  if (hireDate > today) {
+    input.style.borderColor = '#c62828';
+    hint.textContent = '입사일자가 오늘 이후입니다';
+    hint.style.color = '#c62828';
+    area.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><p>입사일자가 오늘 이후입니다. 다시 확인해주세요.</p></div>`;
+    return;
+  }
+
+  input.style.borderColor = '#2e7d32';
+  hint.textContent = `✓ ${formatDate(hireDate)}`;
+  hint.style.color = '#2e7d32';
+
+  const fiscal = calcFiscalYearBasis(hireDate, today);
+  const anniv  = calcAnniversaryBasis(hireDate, today);
+
+  const fiscalRemain = Math.max(0, fiscal.currentYearDays - usedDays);
+  const anniversaryRemain = Math.max(0, anniv.currentDays - usedDays);
+
+  const fiscalShort = fiscal.currentYearDays < usedDays;
+  const anniversaryShort = anniv.currentDays < usedDays;
+
+  // 근속기간 표시
+  const totalMonths = completedMonths(hireDate, today);
+  const totalYears = Math.floor(totalMonths / 12);
+  const restMonths = totalMonths % 12;
+  const serviceTxt = totalYears > 0
+    ? `${totalYears}년 ${restMonths}개월`
+    : `${restMonths}개월`;
+
+  function colorClass(val) {
+    return val <= 0 ? 'red' : val <= 3 ? 'accent' : 'green';
+  }
+
+  function fiscalTableRows() {
+    return fiscal.rows.map(r => `
+      <tr class="${r.isCurrent ? 'current-row' : r.isPast ? 'past-row' : ''}">
+        <td>${r.label} ${r.isCurrent ? '<span class="badge now">현재</span>' : r.isPast ? '<span class="badge done">완료</span>' : ''}</td>
+        <td>${r.period}</td>
+        <td style="text-align:right;font-weight:700;">${r.days}일</td>
+        <td style="font-size:11px;color:#666;">${r.basis}</td>
+      </tr>`).join('');
+  }
+
+  function anniversaryTableRows() {
+    return anniv.rows.map(r => `
+      <tr class="${r.isCurrent ? 'current-row' : r.isPast ? 'past-row' : ''}">
+        <td>${r.label} ${r.isCurrent ? '<span class="badge now">현재</span>' : r.isPast ? '<span class="badge done">완료</span>' : ''}</td>
+        <td>${r.period}</td>
+        <td style="text-align:right;font-weight:700;">${r.isCurrent ? r.accrued : r.total}일</td>
+        <td style="font-size:11px;color:#666;">${r.basis}</td>
+      </tr>`).join('');
+  }
+
+  area.innerHTML = `
+    <!-- 근속 요약 -->
+    <div class="card">
+      <div class="card-header"><h3>근속 현황</h3></div>
+      <div class="card-body" style="display:flex;gap:24px;flex-wrap:wrap;">
+        <div><div style="font-size:11px;color:#888;margin-bottom:4px;">입사일</div><div style="font-size:16px;font-weight:700;">${formatDate(hireDate)}</div></div>
+        <div><div style="font-size:11px;color:#888;margin-bottom:4px;">오늘</div><div style="font-size:16px;font-weight:700;">${formatDate(today)}</div></div>
+        <div><div style="font-size:11px;color:#888;margin-bottom:4px;">근속기간</div><div style="font-size:16px;font-weight:700;color:#3949ab;">${serviceTxt}</div></div>
+        <div><div style="font-size:11px;color:#888;margin-bottom:4px;">사용 연차</div><div style="font-size:16px;font-weight:700;color:#e65100;">${usedDays}일</div></div>
+      </div>
+    </div>
+
+    <!-- 결과 2열 -->
+    <div class="result-grid">
+      <!-- 회계년도 기준 -->
+      <div class="result-card fiscal">
+        <div class="rc-header">
+          🏢 회계년도 기준
+          <span class="tag">1.1 ~ 12.31</span>
+        </div>
+        <div class="rc-body">
+          <div class="stat-row">
+            <span class="stat-label">올해(${today.getFullYear()}년) 발생 연차</span>
+            <span class="stat-value accent">${fiscal.currentYearDays}일</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">사용한 연차</span>
+            <span class="stat-value" style="color:#e65100;">${usedDays}일</span>
+          </div>
+          <div class="remaining-big">
+            <div class="rb-label">잔여 연차</div>
+            <div class="rb-value ${colorClass(fiscalRemain)}">${fiscalRemain}<span class="rb-unit">일</span></div>
+            ${fiscalShort ? '<div style="font-size:11px;color:#c62828;margin-top:4px;">⚠ 사용 연차가 발생 연차를 초과했습니다</div>' : ''}
+          </div>
+        </div>
+      </div>
+
+      <!-- 입사일자 기준 -->
+      <div class="result-card anniv">
+        <div class="rc-header">
+          🗓 입사일자 기준
+          <span class="tag" style="background:#2e7d32;">입사주년</span>
+        </div>
+        <div class="rc-body">
+          <div class="stat-row">
+            <span class="stat-label">현재 기간 발생 연차</span>
+            <span class="stat-value green">${anniv.currentDays}일</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">사용한 연차</span>
+            <span class="stat-value" style="color:#e65100;">${usedDays}일</span>
+          </div>
+          <div class="remaining-big">
+            <div class="rb-label">잔여 연차</div>
+            <div class="rb-value ${colorClass(anniversaryRemain)}">${anniversaryRemain}<span class="rb-unit">일</span></div>
+            ${anniversaryShort ? '<div style="font-size:11px;color:#c62828;margin-top:4px;">⚠ 사용 연차가 발생 연차를 초과했습니다</div>' : ''}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 상세 내역 카드 -->
+    <div class="card">
+      <div class="card-header"><h3>연도별 발생 상세 내역</h3></div>
+
+      <!-- 회계년도 기준 테이블 -->
+      <button class="detail-toggle" onclick="toggleDetail('fiscal-detail', this)">
+        ▶ 회계년도 기준 연차 발생 내역 보기
+      </button>
+      <div id="fiscal-detail" class="detail-section">
+        <table>
+          <thead><tr><th>구분</th><th>기간</th><th style="text-align:right;">발생 연차</th><th>산정 기준</th></tr></thead>
+          <tbody>${fiscalTableRows()}</tbody>
+        </table>
+        <div class="notice" style="margin-top:12px;">
+          <strong>회계년도 기준이란?</strong><br>
+          회사가 1월 1일~12월 31일을 기준으로 연차를 부여하는 방식입니다.<br>
+          · 입사 연도: 입사월부터 연말까지 <strong>1개월 개근 시 1일</strong> 발생<br>
+          · 다음 연도: 1월 1일 기준 근속 1년 미만이면 <strong>비례 부여</strong>, 1년 이상이면 <strong>근속 연수에 따라 일괄 부여</strong>
+        </div>
+      </div>
+
+      <!-- 입사일자 기준 테이블 -->
+      <button class="detail-toggle" onclick="toggleDetail('anniv-detail', this)">
+        ▶ 입사일자 기준 연차 발생 내역 보기
+      </button>
+      <div id="anniv-detail" class="detail-section">
+        <table>
+          <thead><tr><th>구분</th><th>기간</th><th style="text-align:right;">발생 연차</th><th>산정 기준</th></tr></thead>
+          <tbody>${anniversaryTableRows()}</tbody>
+        </table>
+        <div class="notice notice-green" style="margin-top:12px;">
+          <strong>입사일자 기준이란?</strong><br>
+          입사일을 기준으로 1년 단위로 연차를 부여하는 방식입니다.<br>
+          · 1년차: <strong>1개월 개근 시 1일</strong>, 최대 11일<br>
+          · 2년차 이후: 입사 1주년에 <strong>15일 일괄 부여</strong><br>
+          · 3년 이상: 매 2년마다 1일 추가 (최대 25일)
+        </div>
+      </div>
+    </div>
+
+    <!-- 연차 발생 기준표 -->
+    <div class="card">
+      <div class="card-header"><h3>근속연수별 연차 발생 기준 (근로기준법 제60조)</h3></div>
+      <div class="card-body" style="overflow-x:auto;">
+        <table style="min-width:420px;">
+          <thead>
+            <tr>
+              <th>근속연수</th>
+              <th style="text-align:right;">연간 연차일수</th>
+              <th>비고</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${[
+              ['1년 미만', '최대 11일', '1개월 개근 시 1일 발생'],
+              ['1~2년', '15일', ''],
+              ['3~4년', '16일', '3년 이상부터 2년마다 1일 가산'],
+              ['5~6년', '17일', ''],
+              ['7~8년', '18일', ''],
+              ['9~10년', '19일', ''],
+              ['11~12년', '20일', ''],
+              ['13~14년', '21일', ''],
+              ['15~16년', '22일', ''],
+              ['17~18년', '23일', ''],
+              ['19~20년', '24일', ''],
+              ['21년 이상', '25일', '법정 최대'],
+            ].map(([years, days, note]) => {
+              const isMatch = isCurrentRange(years, totalYears, totalMonths);
+              return `<tr style="${isMatch ? 'background:#fff8e1;font-weight:700;' : ''}">
+                <td>${years} ${isMatch ? '<span class="badge now">현재</span>' : ''}</td>
+                <td style="text-align:right;color:${isMatch ? '#3949ab' : '#333'};font-weight:${isMatch ? '700' : '400'};">${days}</td>
+                <td style="font-size:11px;color:#888;">${note}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function isCurrentRange(rangeLabel, totalYears, totalMonths) {
+  if (rangeLabel === '1년 미만') return totalMonths < 12;
+  if (rangeLabel === '21년 이상') return totalYears >= 21;
+  const parts = rangeLabel.replace('년', '').split('~').map(Number);
+  if (parts.length === 2) return totalYears >= parts[0] && totalYears <= parts[1];
+  return false;
+}
+
+function toggleDetail(id, btn) {
+  const el = document.getElementById(id);
+  const open = el.classList.toggle('open');
+  btn.textContent = btn.textContent.replace(open ? '▶' : '▼', open ? '▼' : '▶');
+}
+
+// 이벤트 바인딩
+document.getElementById('hireDate').addEventListener('input', render);
+document.getElementById('usedDays').addEventListener('input', render);
+
+// 초기 렌더
+render();
+</script>
+</body>
+</html>
