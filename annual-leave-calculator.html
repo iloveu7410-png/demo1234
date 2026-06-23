@@ -755,9 +755,9 @@ async function lookupEmployee() {
     // 전역 결과 저장 → render()에서 실제 잔여연차 카드 생성
     empLookupResult = { curr: data, prev: prevData, year };
 
-    // 사용연차 자동 입력 (현재 연도 기준)
-    document.getElementById('usedDays').value = data.usedDays ?? 0;
+    // 사용연차 자동 입력 (전년도 입사자는 전년+올해 합산)
     const totalUsed = (prevData ? prevData.usedDays : 0) + (data.usedDays ?? 0);
+    document.getElementById('usedDays').value = totalUsed;
     document.getElementById('usedDaysHint').textContent =
       prevData
         ? `✓ ${year-1}년 ${prevData.usedDays}일 + ${year}년 ${data.usedDays}일 = 합계 ${totalUsed}일 사용`
