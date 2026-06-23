@@ -634,16 +634,29 @@ async function lookupEmployee() {
   info.style.display = 'none';
 
   try {
-    const res  = await fetch(`/api/employee-info/${encodeURIComponent(empNo)}`);
-    const data = await res.json();
+    const res = await fetch(`https://memo-app-6iib.onrender.com/api/employee-info/${encodeURIComponent(empNo)}`);
+    let data;
+    try { data = await res.json(); } catch { throw new Error('서버 응답 오류'); }
     if (!res.ok) throw new Error(data.error || '조회 실패');
 
+    // 사용연차 자동 입력
     document.getElementById('usedDays').value = data.usedDays ?? 0;
     document.getElementById('usedDaysHint').textContent = `✓ 근태시스템 기준 (총 ${data.totalDays}일 중 ${data.usedDays}일 사용)`;
     document.getElementById('usedDaysHint').style.color = '#2e7d32';
+
+    // 입사일 자동 입력
+    if (data.hireDate) {
+      const hireDateStr = data.hireDate.replace(/[^0-9]/g, '').slice(0, 8);
+      document.getElementById('hireDate').value = hireDateStr;
+      document.getElementById('hireDateHint').textContent = `✓ 근태시스템 기준: ${hireDateStr.slice(0,4)}.${hireDateStr.slice(4,6)}.${hireDateStr.slice(6,8)}`;
+      document.getElementById('hireDateHint').style.color = '#2e7d32';
+      document.getElementById('hireDate').style.borderColor = '#2e7d32';
+    }
+
     showEmpInfo('ok',
       `✓ ${data.name} · ${data.dept}${data.position ? ' · ' + data.position : ''} — ` +
-      `총 ${data.totalDays}일 / 사용 ${data.usedDays}일 / 잔여 ${data.remainingDays}일`
+      `총 ${data.totalDays}일 / 사용 ${data.usedDays}일 / 잔여 ${data.remainingDays}일` +
+      (data.hireDate ? ` · 입사일 ${data.hireDate.slice(0,10)}` : '')
     );
     render();
   } catch (e) {
