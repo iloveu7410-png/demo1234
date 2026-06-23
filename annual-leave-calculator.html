@@ -251,6 +251,9 @@
 </div>
 
 <script>
+// ── 근태시스템 조회 결과 저장 (render()에서 참조) ──────────────
+let empLookupResult = null;
+
 // ── 유틸리티 ─────────────────────────────────────────────
 function parseDate(str) {
   const s = str.replace(/[.\-\/\s]/g, '');
@@ -467,7 +470,10 @@ function render() {
       </tr>`).join('');
   }
 
-  area.innerHTML = `
+  // ── 근태시스템 기준 실제 잔여연차 카드 ──
+  const actualCard = buildActualCard();
+
+  area.innerHTML = actualCard + `
     <!-- 근속 요약 -->
     <div class="card">
       <div class="card-header"><h3>근속 현황</h3></div>
@@ -609,6 +615,74 @@ function render() {
   `;
 }
 
+function buildActualCard() {
+  if (!empLookupResult) return '';
+  const { curr, prev, year } = empLookupResult;
+
+  const totalGenerated = (prev ? prev.totalDays : 0) + curr.totalDays;
+  const totalUsed      = (prev ? prev.usedDays   : 0) + curr.usedDays;
+  const totalRemaining = (prev ? prev.remainingDays : 0) + curr.remainingDays;
+  const color = totalRemaining <= 0 ? '#c62828' : totalRemaining <= 3 ? '#e65100' : '#1b5e20';
+
+  const rows = prev
+    ? `<tr>
+        <td style="padding:6px 10px">${year - 1}년</td>
+        <td style="padding:6px 10px;text-align:right">${prev.totalDays}일</td>
+        <td style="padding:6px 10px;text-align:right">${prev.usedDays}일</td>
+        <td style="padding:6px 10px;text-align:right;font-weight:700">${prev.remainingDays}일</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 10px">${year}년</td>
+        <td style="padding:6px 10px;text-align:right">${curr.totalDays}일</td>
+        <td style="padding:6px 10px;text-align:right">${curr.usedDays}일</td>
+        <td style="padding:6px 10px;text-align:right;font-weight:700">${curr.remainingDays}일</td>
+      </tr>
+      <tr style="border-top:2px solid #1a237e;background:#e8eaf6;font-weight:700">
+        <td style="padding:6px 10px">합계</td>
+        <td style="padding:6px 10px;text-align:right">${totalGenerated}일</td>
+        <td style="padding:6px 10px;text-align:right">${totalUsed}일</td>
+        <td style="padding:6px 10px;text-align:right;color:${color}">${totalRemaining}일</td>
+      </tr>`
+    : `<tr>
+        <td style="padding:6px 10px">${year}년</td>
+        <td style="padding:6px 10px;text-align:right">${curr.totalDays}일</td>
+        <td style="padding:6px 10px;text-align:right">${curr.usedDays}일</td>
+        <td style="padding:6px 10px;text-align:right;font-weight:700;color:${color}">${curr.remainingDays}일</td>
+      </tr>`;
+
+  return `
+    <div class="card" style="border:2px solid #1a237e;">
+      <div class="card-header" style="background:#1a237e;">
+        <h3 style="color:white;">근태시스템 기준 실제 잔여연차</h3>
+      </div>
+      <div class="card-body">
+        <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;margin-bottom:12px;">
+          <div>
+            <div style="font-size:11px;color:#888;margin-bottom:2px;">사용 가능 잔여연차</div>
+            <div style="font-size:40px;font-weight:800;color:${color};line-height:1">${totalRemaining}<span style="font-size:16px;font-weight:400;color:#777;margin-left:2px">일</span></div>
+          </div>
+          <div style="font-size:13px;color:#555;line-height:2">
+            <div>총 발생 <strong>${totalGenerated}일</strong></div>
+            <div>총 사용 <strong>${totalUsed}일</strong></div>
+            ${prev ? `<div style="font-size:11px;color:#888">${year-1}년 잔여 ${prev.remainingDays}일 + ${year}년 잔여 ${curr.remainingDays}일</div>` : ''}
+          </div>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead>
+            <tr style="background:#f7f8fc;">
+              <th style="padding:6px 10px;text-align:left;border-bottom:2px solid #3949ab">연도</th>
+              <th style="padding:6px 10px;text-align:right;border-bottom:2px solid #3949ab">발생</th>
+              <th style="padding:6px 10px;text-align:right;border-bottom:2px solid #3949ab">사용</th>
+              <th style="padding:6px 10px;text-align:right;border-bottom:2px solid #3949ab">잔여</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <div style="font-size:11px;color:#999;margin-top:8px">* 근태시스템(Duall) 기준 · 아래는 법정 발생 이론값 참고용</div>
+      </div>
+    </div>`;
+}
+
 function isCurrentRange(rangeLabel, totalYears, totalMonths) {
   if (rangeLabel === '1년 미만') return totalMonths < 12;
   if (rangeLabel === '21년 이상') return totalYears >= 21;
@@ -633,6 +707,7 @@ async function lookupEmployee() {
   btn.disabled = true;
   btn.textContent = '조회 중…';
   info.style.display = 'none';
+  empLookupResult = null;
 
   try {
     const year = parseInt(document.getElementById('lookupYear').value);
@@ -664,59 +739,23 @@ async function lookupEmployee() {
       } catch {}
     }
 
+    // 전역 결과 저장 → render()에서 실제 잔여연차 카드 생성
+    empLookupResult = { curr: data, prev: prevData, year };
+
     // 사용연차 자동 입력 (현재 연도 기준)
     document.getElementById('usedDays').value = data.usedDays ?? 0;
+    const totalUsed = (prevData ? prevData.usedDays : 0) + (data.usedDays ?? 0);
+    document.getElementById('usedDaysHint').textContent =
+      prevData
+        ? `✓ ${year-1}년 ${prevData.usedDays}일 + ${year}년 ${data.usedDays}일 = 합계 ${totalUsed}일 사용`
+        : `✓ ${year}년 근태시스템 기준 (총 ${data.totalDays}일 중 ${data.usedDays}일 사용)`;
+    document.getElementById('usedDaysHint').style.color = '#2e7d32';
 
-    if (prevData) {
-      // 전년도 + 올해 합산 표시
-      const totalUsed = (prevData.usedDays || 0) + (data.usedDays || 0);
-      const totalRemaining = (prevData.remainingDays || 0) + (data.remainingDays || 0);
-      document.getElementById('usedDaysHint').textContent =
-        `✓ ${year}년 사용 ${data.usedDays}일 + ${year-1}년 사용 ${prevData.usedDays}일 = 합계 ${totalUsed}일`;
-      document.getElementById('usedDaysHint').style.color = '#2e7d32';
-
-      showEmpInfo('ok',
-        `✓ ${data.name} · ${data.dept}${data.position ? ' · ' + data.position : ''}` +
-        (data.hireDate ? ` · 입사일 ${data.hireDate.slice(0,10)}` : '') +
-        `<table style="width:100%;margin-top:8px;border-collapse:collapse;font-size:12px;">
-          <thead><tr style="background:rgba(0,0,0,0.06)">
-            <th style="padding:5px 8px;text-align:left">연도</th>
-            <th style="padding:5px 8px;text-align:right">발생</th>
-            <th style="padding:5px 8px;text-align:right">사용</th>
-            <th style="padding:5px 8px;text-align:right">잔여</th>
-          </tr></thead>
-          <tbody>
-            <tr>
-              <td style="padding:5px 8px">${year-1}년</td>
-              <td style="padding:5px 8px;text-align:right">${prevData.totalDays}일</td>
-              <td style="padding:5px 8px;text-align:right">${prevData.usedDays}일</td>
-              <td style="padding:5px 8px;text-align:right">${prevData.remainingDays}일</td>
-            </tr>
-            <tr>
-              <td style="padding:5px 8px">${year}년</td>
-              <td style="padding:5px 8px;text-align:right">${data.totalDays}일</td>
-              <td style="padding:5px 8px;text-align:right">${data.usedDays}일</td>
-              <td style="padding:5px 8px;text-align:right">${data.remainingDays}일</td>
-            </tr>
-            <tr style="font-weight:700;border-top:2px solid rgba(0,0,0,0.15)">
-              <td style="padding:5px 8px">합계</td>
-              <td style="padding:5px 8px;text-align:right">${(prevData.totalDays||0)+(data.totalDays||0)}일</td>
-              <td style="padding:5px 8px;text-align:right">${totalUsed}일</td>
-              <td style="padding:5px 8px;text-align:right;color:#1b5e20">${totalRemaining}일</td>
-            </tr>
-          </tbody>
-        </table>`
-      );
-    } else {
-      document.getElementById('usedDaysHint').textContent =
-        `✓ ${data.year}년 근태시스템 기준 (총 ${data.totalDays}일 중 ${data.usedDays}일 사용)`;
-      document.getElementById('usedDaysHint').style.color = '#2e7d32';
-      showEmpInfo('ok',
-        `✓ ${data.name} · ${data.dept}${data.position ? ' · ' + data.position : ''}<br>` +
-        `${data.year}년 기준 — 총 ${data.totalDays}일 / 사용 ${data.usedDays}일 / 잔여 ${data.remainingDays}일` +
-        (data.hireDate ? ` · 입사일 ${data.hireDate.slice(0,10)}` : '')
-      );
-    }
+    showEmpInfo('ok',
+      `✓ ${data.name} · ${data.dept}${data.position ? ' · ' + data.position : ''}` +
+      (data.hireDate ? ` · 입사일 ${data.hireDate.slice(0,10)}` : '') +
+      (prevData ? ` · 전년도 포함 합산` : '')
+    );
     render();
   } catch (e) {
     showEmpInfo('err', `⚠ ${e.message}`);
