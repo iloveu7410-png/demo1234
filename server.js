@@ -239,28 +239,19 @@ app.get('/api/employee-info/:empNo', async (req, res) => {
     const emp = employees.find(e => String(e.empNo).trim() === empNo);
     if (!emp) return res.status(404).json({ error: '사원번호를 찾을 수 없습니다.' });
 
-    console.log('[employee-info] emp keys:', Object.keys(emp).join(', '));
-    console.log('[employee-info] emp raw:', JSON.stringify(emp));
-
     // 잔여연차 직접 조회 (Duall 시스템 계산값 그대로 사용)
     const leaveBalances = await duallFetch(`/attendance/employee/${emp.empId}/leave-balance`, { date: today });
     const annual = leaveBalances.find(l => l.vacationGroupName && l.vacationGroupName.includes('연차'));
-
-    // 입사일 추출 (Duall 필드명 후보)
-    const hireDate =
-      emp.enterDate || emp.hireDate || emp.joinDate || emp.joinDt ||
-      emp.empDate  || emp.startDate || emp.entryDate || null;
 
     res.json({
       employee_number: emp.empNo,
       name: emp.empNm,
       dept: emp.orgNm || '',
       position: emp.posNm || '',
-      hireDate: hireDate || null,
+      hireDate: emp.employmentDate || null,
       totalDays: annual ? annual.totalDays : 0,
       usedDays: annual ? annual.usedDays : 0,
       remainingDays: annual ? annual.remainingDays : 0,
-      _debug_emp: emp,
     });
   } catch (err) {
     console.error('[employee-info]', err.message);
