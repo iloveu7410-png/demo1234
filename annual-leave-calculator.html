@@ -653,10 +653,14 @@ async function lookupEmployee() {
       document.getElementById('hireDate').style.borderColor = '#2e7d32';
     }
 
+    const debugFields = data._debug_emp
+      ? Object.entries(data._debug_emp).map(([k,v]) => `<b>${k}</b>: ${v}`).join('<br>')
+      : '';
     showEmpInfo('ok',
       `✓ ${data.name} · ${data.dept}${data.position ? ' · ' + data.position : ''} — ` +
       `총 ${data.totalDays}일 / 사용 ${data.usedDays}일 / 잔여 ${data.remainingDays}일` +
-      (data.hireDate ? ` · 입사일 ${data.hireDate.slice(0,10)}` : '')
+      (data.hireDate ? ` · 입사일 ${data.hireDate.slice(0,10)}` : '') +
+      (debugFields ? `<hr style="margin:8px 0;border-color:#a5d6a7"><div style="font-size:11px;line-height:1.8">${debugFields}</div>` : '')
     );
     render();
   } catch (e) {
@@ -670,7 +674,7 @@ async function lookupEmployee() {
 function showEmpInfo(type, msg) {
   const el = document.getElementById('empInfo');
   el.className = `emp-info ${type}`;
-  el.textContent = msg;
+  el.innerHTML = msg;
   el.style.display = 'block';
 }
 
