@@ -332,7 +332,14 @@ function calcAnniversaryBasis(hireDate, today) {
   }
 
   const curr = rows.find(r => r.isCurrent) || rows[rows.length - 1];
-  return { rows, currentDays: curr ? curr.accrued : 0, currentRow: curr };
+  const currIdx = rows.indexOf(curr);
+
+  // 2년차: 1년차 11일 + 2년차 15일 합산
+  const isYear2 = !isFirstYear && currIdx === 1;
+  const prevDays = isYear2 ? yr1Total : 0;
+  const currentDays = (curr ? curr.accrued : 0) + prevDays;
+
+  return { rows, currentDays, prevDays, currentRow: curr };
 }
 
 // ── 회계년도 기준 계산 ─────────────────────────────────────
@@ -384,10 +391,16 @@ function calcFiscalYearBasis(hireDate, today) {
       days,
       isCurrent,
       isPast,
+      isHireYear,
     });
   }
 
-  return { rows, currentYearDays };
+  // 전년도 입사자(입사 다음 해): 전년도 발생 + 올해 발생 합산
+  const isYearAfterHire = todayYear === hireYear + 1;
+  const prevYearDays = isYearAfterHire ? (rows.find(r => r.isHireYear)?.days || 0) : 0;
+  const combinedCurrentDays = currentYearDays + prevYearDays;
+
+  return { rows, currentYearDays: combinedCurrentDays, prevYearDays };
 }
 
 // ── 렌더링 ─────────────────────────────────────────────────
@@ -495,7 +508,7 @@ function render() {
         </div>
         <div class="rc-body">
           <div class="stat-row">
-            <span class="stat-label">올해(${today.getFullYear()}년) 발생 연차</span>
+            <span class="stat-label">발생 연차${fiscal.prevYearDays ? ` <span style="font-size:11px;color:#888">(전년 ${fiscal.prevYearDays}일 + 올해 ${fiscal.currentYearDays - fiscal.prevYearDays}일)</span>` : ` (${today.getFullYear()}년)`}</span>
             <span class="stat-value accent">${fiscal.currentYearDays}일</span>
           </div>
           <div class="stat-row">
@@ -518,7 +531,7 @@ function render() {
         </div>
         <div class="rc-body">
           <div class="stat-row">
-            <span class="stat-label">현재 기간 발생 연차</span>
+            <span class="stat-label">발생 연차${anniv.prevDays ? ` <span style="font-size:11px;color:#888">(1년차 ${anniv.prevDays}일 + 2년차 ${anniv.currentDays - anniv.prevDays}일)</span>` : ''}</span>
             <span class="stat-value green">${anniv.currentDays}일</span>
           </div>
           <div class="stat-row">
