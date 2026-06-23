@@ -280,6 +280,14 @@ app.get('/annual-leave-calculator.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'annual-leave-calculator.html'));
 });
 
+app.get('/exit-interview-dashboard', (req, res) => {
+  res.sendFile(path.join(__dirname, 'exit-interview-dashboard.html'));
+});
+
+app.get('/exit-interview-dashboard.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'exit-interview-dashboard.html'));
+});
+
 app.get('/manifest-calculator.json', (req, res) => {
   res.sendFile(path.join(__dirname, 'manifest-calculator.json'));
 });

@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>퇴직설문조사 대시보드</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f0f4f8; --card: #ffffff; --border: #e2e8f0; --border-h: #cbd5e1;
+      --t1: #0f172a; --t2: #64748b; --t3: #94a3b8;
+      --sh: 0 1px 3px rgba(0,0,0,0.07),0 1px 2px rgba(0,0,0,0.04);
+      --sh-h: 0 6px 20px rgba(0,0,0,0.09);
+    }
+    body { font-family:'Inter',system-ui,sans-serif; background:var(--bg); color:var(--t1); min-height:100vh; -webkit-font-smoothing:antialiased; }
+
+    /* HEADER */
+    header { position:sticky;top:0;z-index:50;background:var(--card);border-bottom:1px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,0.05);height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 48px; }
+    .h-brand { display:flex;align-items:center;gap:12px; }
+    .h-icon  { width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:.875rem;flex-shrink:0; }
+    .h-title { font-size:.9375rem;font-weight:700;letter-spacing:-.02em; }
+    .h-sub   { font-size:.6875rem;color:var(--t3);margin-top:1px; }
+    .h-right { display:flex;align-items:center;gap:10px; }
+    .pill    { padding:4px 13px;border-radius:100px;font-size:.6875rem;font-weight:600; }
+    .pill-indigo { background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.25);color:#4f46e5; }
+    .pill-ghost  { background:#f8fafc;border:1px solid var(--border);color:var(--t2); }
+
+    main { max-width:1440px;margin:0 auto;padding:40px 48px 88px; }
+    .section { margin-bottom:36px; }
+    .sl { font-size:.6575rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--t3);margin-bottom:14px; }
+
+    /* CARD */
+    .card { background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--sh);transition:border-color .2s,box-shadow .2s; }
+    .card:hover { border-color:var(--border-h);box-shadow:var(--sh-h); }
+    .card-title { font-size:.9375rem;font-weight:700;letter-spacing:-.02em;color:var(--t1); }
+    .card-desc  { font-size:.73rem;color:var(--t3);margin-top:3px;margin-bottom:20px; }
+
+    /* KPI */
+    .kpi-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:16px; }
+    .kpi-card { padding:24px 26px 22px;position:relative;overflow:hidden;cursor:default; }
+    .kpi-card::before { content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:14px 14px 0 0; }
+    .kpi--i::before { background:linear-gradient(90deg,#6366f1,#8b5cf6); }
+    .kpi--e::before { background:linear-gradient(90deg,#10b981,#34d399); }
+    .kpi--a::before { background:linear-gradient(90deg,#f59e0b,#fbbf24); }
+    .kpi-label { font-size:.6575rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);margin-bottom:12px;margin-top:4px; }
+    .kpi-num   { font-size:2.6rem;font-weight:900;line-height:1;letter-spacing:-.05em;margin-bottom:8px; }
+    .kpi--i .kpi-num { color:#4f46e5; }
+    .kpi--e .kpi-num { color:#059669; }
+    .kpi--a .kpi-num { color:#b45309; }
+    .kpi-sub   { font-size:.8125rem;color:var(--t2);line-height:1.55; }
+    .kpi-sub b { color:var(--t1);font-weight:600; }
+    .kpi-icon  { position:absolute;top:22px;right:22px;width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:1.0625rem; }
+    .kpi--i .kpi-icon { background:rgba(99,102,241,.1); }
+    .kpi--e .kpi-icon { background:rgba(16,185,129,.1); }
+    .kpi--a .kpi-icon { background:rgba(245,158,11,.1); }
+
+    /* CHARTS GRID */
+    .charts-grid   { display:grid;grid-template-columns:360px 1fr;gap:16px; }
+    .charts-grid2  { display:grid;grid-template-columns:1fr 340px;gap:16px; }
+    .chart-inner   { padding:24px 26px 22px; }
+    .bar-wrap      { position:relative;height:260px; }
+    .donut-wrap    { position:relative;width:200px;height:200px;margin:0 auto; }
+    .donut-layout  { display:flex;flex-direction:column;align-items:center; }
+    .donut-center  { position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;z-index:1; }
+    .dc-num  { font-size:1.875rem;font-weight:900;letter-spacing:-.04em;color:var(--t1);line-height:1; }
+    .dc-text { font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);margin-top:3px; }
+    .legend  { width:100%;margin-top:18px;display:flex;flex-direction:column;gap:9px; }
+    .l-row   { display:flex;align-items:center;justify-content:space-between; }
+    .l-left  { display:flex;align-items:center;gap:9px; }
+    .l-dot   { width:7px;height:7px;border-radius:50%;flex-shrink:0; }
+    .l-name  { font-size:.8rem;color:var(--t2); }
+    .l-val   { font-size:.8rem;font-weight:700;color:var(--t1); }
+    .l-track { height:3px;background:#f1f5f9;border-radius:2px;margin-top:4px;margin-left:16px; }
+    .l-fill  { height:100%;border-radius:2px;opacity:.6; }
+
+    /* KEYWORDS */
+    .kw-cloud { display:flex;flex-wrap:wrap;align-items:center;gap:10px;min-height:72px; }
+    .kw-badge { display:inline-flex;align-items:center;border-radius:8px;font-weight:600;letter-spacing:-.01em;cursor:default;transition:transform .15s,box-shadow .15s;white-space:nowrap;line-height:1; }
+    .kw-badge:hover { transform:translateY(-2px) scale(1.05);box-shadow:0 4px 12px rgba(0,0,0,.1); }
+    .kw-cnt { margin-left:5px;opacity:.6;font-weight:700; }
+
+    /* TABLE */
+    .table-top   { padding:18px 26px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between; }
+    .table-scroll{ overflow-x:auto; }
+    table { width:100%;border-collapse:collapse; }
+    thead tr { border-bottom:1px solid var(--border);background:#f8fafc; }
+    thead th { padding:9px 16px;text-align:left;font-size:.6575rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);white-space:nowrap; }
+    tbody tr { border-bottom:1px solid var(--border);transition:background .12s; }
+    tbody tr:last-child { border-bottom:none; }
+    tbody tr:hover { background:#f8fafc; }
+    tbody td { padding:12px 16px;font-size:.8125rem;color:var(--t2);vertical-align:middle;white-space:nowrap; }
+    .td-name { color:var(--t1);font-weight:600; }
+    .td-dept { color:var(--t2); }
+    .td-long { max-width:220px;overflow:hidden;text-overflow:ellipsis;color:var(--t3); }
+    .sat-chip { display:inline-flex;padding:2px 9px;border-radius:100px;font-size:.6875rem;font-weight:600; }
+    .reason-chip { display:inline-flex;padding:3px 9px;border-radius:6px;font-size:.75rem;font-weight:500; }
+
+    /* SCORE GAUGE (avg bar) */
+    .avg-row   { display:flex;align-items:center;gap:12px;margin-bottom:6px; }
+    .avg-label { font-size:.8125rem;color:var(--t2);width:110px;flex-shrink:0;text-align:right; }
+    .avg-bar-bg { flex:1;height:8px;background:#f1f5f9;border-radius:4px;overflow:hidden; }
+    .avg-bar-fill { height:100%;border-radius:4px;transition:width .8s ease; }
+    .avg-score { font-size:.8125rem;font-weight:700;color:var(--t1);width:32px;text-align:right; }
+
+    ::-webkit-scrollbar { width:4px;height:4px; }
+    ::-webkit-scrollbar-track { background:transparent; }
+    ::-webkit-scrollbar-thumb { background:#cbd5e1;border-radius:2px; }
+
+    @media(max-width:1100px){ .charts-grid,.charts-grid2{ grid-template-columns:1fr; } }
+    @media(max-width:860px){ header,.tab-bar{ padding:0 20px; } main{ padding:28px 20px 60px; } .kpi-grid{ grid-template-columns:1fr; } .h-right{ display:none; } }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="h-brand">
+    <div class="h-icon">📋</div>
+    <div>
+      <div class="h-title">퇴직설문조사 대시보드</div>
+      <div class="h-sub">Human Resources · Exit Survey Analytics</div>
+    </div>
+  </div>
+  <div class="h-right">
+    <span class="pill pill-indigo" id="data-count-badge">— 건</span>
+    <span class="pill" id="sync-badge" onclick="fetchFromSheets()" title="클릭하여 새로고침" style="cursor:pointer;padding:4px 13px;border-radius:100px;font-size:.6875rem;font-weight:600;">⏳ 연동 중...</span>
+    <span class="pill pill-ghost" id="today-badge">—</span>
+  </div>
+</header>
+
+<main>
+
+  <section class="section">
+    <div class="sl">핵심 지표</div>
+    <div class="kpi-grid" id="kpi-grid"></div>
+  </section>
+
+  <section class="section">
+    <div class="sl">만족도 분석</div>
+    <div class="charts-grid">
+      <!-- 전반적 만족도 분포 -->
+      <div class="card">
+        <div class="chart-inner">
+          <div class="card-title">전반적 만족도 분포</div>
+          <div class="card-desc">응답자 전체 기준 · 5점 척도</div>
+          <div class="donut-layout">
+            <div class="donut-wrap">
+              <canvas id="satDonut"></canvas>
+              <div class="donut-center">
+                <div class="dc-num" id="donut-avg">—</div>
+                <div class="dc-text">평균 / 5</div>
+              </div>
+            </div>
+            <div class="legend" id="sat-legend"></div>
+          </div>
+        </div>
+      </div>
+      <!-- 세부 항목별 평균 -->
+      <div class="card">
+        <div class="chart-inner">
+          <div class="card-title">세부 항목별 평균 만족도</div>
+          <div class="card-desc">항목별 평균 점수 · 5점 만점 기준</div>
+          <div id="avg-bars"></div>
+          <div style="display:flex;gap:16px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
+            <div style="display:flex;align-items:center;gap:6px;font-size:.73rem;color:var(--t2);">
+              <span style="width:10px;height:10px;border-radius:50%;background:#059669;display:inline-block;"></span>4.0 이상
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:.73rem;color:var(--t2);">
+              <span style="width:10px;height:10px;border-radius:50%;background:#d97706;display:inline-block;"></span>3.0–3.9
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:.73rem;color:var(--t2);">
+              <span style="width:10px;height:10px;border-radius:50%;background:#e11d48;display:inline-block;"></span>3.0 미만
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="sl">퇴직 사유 · 향후 계획</div>
+    <div class="charts-grid2">
+      <!-- 퇴직사유 키워드 -->
+      <div class="card">
+        <div class="chart-inner">
+          <div class="card-title">퇴직 사유 키워드</div>
+          <div class="card-desc">크기·색상으로 언급 빈도를 표현합니다</div>
+          <div class="kw-cloud" id="kw-cloud"></div>
+        </div>
+      </div>
+      <!-- 향후 계획 분포 -->
+      <div class="card">
+        <div class="chart-inner">
+          <div class="card-title">향후 계획 분포</div>
+          <div class="card-desc">퇴직 후 계획 유형</div>
+          <div class="donut-layout">
+            <div class="donut-wrap">
+              <canvas id="planDonut"></canvas>
+              <div class="donut-center">
+                <div class="dc-num" id="plan-total">—</div>
+                <div class="dc-text">응답</div>
+              </div>
+            </div>
+            <div class="legend" id="plan-legend"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="sl">설문 원본 데이터</div>
+    <div class="card" style="overflow:hidden;padding:0;">
+      <div class="table-top">
+        <div>
+          <div class="card-title">개인별 응답 현황</div>
+          <div class="card-desc" style="margin-bottom:0;">퇴직설문조사 전체 응답</div>
+        </div>
+        <span class="pill pill-ghost" id="tbl-badge">— 건</span>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>성명</th><th>사번</th><th>부서</th>
+              <th>전반적 만족도</th><th>보상수준</th><th>업무량</th>
+              <th>상사관계</th><th>성장기회</th><th>조직문화</th>
+              <th>퇴직사유</th><th>향후계획</th><th>개선의견</th>
+            </tr>
+          </thead>
+          <tbody id="tbl-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+/* ================================================================
+   ★ 구글 시트 연동 설정
+   시트 URL을 바꾸려면 SHEET_ID만 수정하세요.
+================================================================ */
+const SHEET_ID  = "1G01EUM42iPu1xRScAPWV6sF1AaX662Q5Vu9feFFF_p0";
+const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=0`;
+
+/* ================================================================
+   ★ 초기 더미 데이터 — 자동 연동 실패 시 표시됩니다.
+   연동 성공 시 이 배열은 구글 시트 데이터로 자동 교체됩니다.
+================================================================ */
+let surveyData = [
+  {
+    empId:"2024014", dept:"플랫폼Biz1그룹 2팀", name:"정지훈",
+    overallSat:"보통", comp:"보통", workload:"그렇지 않다",
+    supervisor:"불만족", growth:"그렇지 않다", culture:"보통",
+    exitReason:"조직문화, 상사 관계",
+    futurePlan:"이직",
+    suggestions:"다면평가 등 객관적인 평가 제도 도입이 필요합니다. 부서 이동 및 직무 전환 기회 활성화도 필요합니다."
+  },
+  {
+    empId:"2016009", dept:"Global Sales2팀", name:"정연지",
+    overallSat:"만족", comp:"만족", workload:"그렇다",
+    supervisor:"만족", growth:"그렇다", culture:"보통",
+    exitReason:"새로운 조직 문화, 환경, 산업 경험",
+    futurePlan:"이직",
+    suggestions:"결원 발생 이후 남은 인원들에 맞는 업무량 배분과 보상 제공이 개선되면 좋겠습니다."
+  },
+  {
+    empId:"2025015", dept:"플랫폼Biz3그룹1팀", name:"조유선",
+    overallSat:"보통", comp:"보통", workload:"보통이다",
+    supervisor:"보통", growth:"보통이다", culture:"보통",
+    exitReason:"급여/인센티브, 조직문화, 회사비전, 업무 과중",
+    futurePlan:"기타",
+    suggestions:"강압적이지 않고 평등한 조직 문화가 되었으면 좋겠습니다."
+  },
+  {
+    empId:"2024018", dept:"QA팀", name:"김용원",
+    overallSat:"만족", comp:"만족", workload:"보통이다",
+    supervisor:"매우만족", growth:"그렇다", culture:"만족",
+    exitReason:"일신상 사유",
+    futurePlan:"이민 준비",
+    suggestions:"AI를 이용한 업무 효율성 개선을 통해 필요 인원에 대한 고민이 필요합니다."
+  },
+  {
+    empId:"2023086", dept:"플랫폼서비스", name:"조현석",
+    overallSat:"보통", comp:"불만족", workload:"보통이다",
+    supervisor:"불만족", growth:"그렇지 않다", culture:"보통",
+    exitReason:"승진/평가, 상사 관계, 경력개발 부족",
+    futurePlan:"기타",
+    suggestions:"리더에게 책임과 권한을 명확히 주고, 목표 설정 과정을 실무자에게 투명하게 공유해야 합니다."
+  },
+  {
+    empId:"2023182", dept:"MVNO사업팀", name:"남석모",
+    overallSat:"매우만족", comp:"만족", workload:"그렇다",
+    supervisor:"매우만족", growth:"매우 그렇다", culture:"매우만족",
+    exitReason:"기타",
+    futurePlan:"자기개발/전업 도전",
+    suggestions:"같은 연차나 직급별 소통할 수 있는 채널이 있었으면 좋겠습니다."
+  },
+  {
+    empId:"2025014", dept:"플랫폼Biz3그룹2팀", name:"홍란",
+    overallSat:"보통", comp:"만족", workload:"보통이다",
+    supervisor:"보통", growth:"그렇다", culture:"보통",
+    exitReason:"개인 사유",
+    futurePlan:"휴식 및 이직 준비",
+    suggestions:"복지와 교육 제도가 잘 갖춰져 있어서 좋았습니다."
+  }
+];
+
+/* ================================================================
+   만족도 텍스트 → 숫자 변환
+================================================================ */
+const SAT_MAP = {
+  "매우만족":5,"매우 만족":5,
+  "만족":4,
+  "보통":3,
+  "불만족":2,
+  "매우불만족":1,"매우 불만족":1,
+  "매우 그렇다":5,
+  "그렇다":4,
+  "보통이다":3,
+  "그렇지 않다":2,
+  "전혀 그렇지 않다":1,
+};
+function toScore(t) { return SAT_MAP[t?.trim()] || 0; }
+
+function scoreColor(v) {
+  if (v >= 4) return { bg:"rgba(16,185,129,.1)", color:"#059669", border:"rgba(16,185,129,.25)" };
+  if (v >= 3) return { bg:"rgba(245,158,11,.1)", color:"#b45309", border:"rgba(245,158,11,.25)" };
+  return         { bg:"rgba(244,63,94,.1)",  color:"#e11d48", border:"rgba(244,63,94,.25)"  };
+}
+
+function satChipHTML(text) {
+  const v = toScore(text);
+  if (!v) return `<span style="color:var(--t3);font-size:.8rem;">${text||'—'}</span>`;
+  const c = scoreColor(v);
+  return `<span class="sat-chip" style="background:${c.bg};color:${c.color};border:1px solid ${c.border};">${text}</span>`;
+}
+
+/* ================================================================
+   퇴직사유 파싱
+================================================================ */
+function parseReasons(raw) {
+  if (!raw) return [];
+  return raw.split(",").map(s => s.trim()).filter(s => s.length > 0).map(s => {
+    if (s.includes("일신상")) return "일신상 사유";
+    if (s.length > 22) return s.slice(0, 20) + "…";
+    return s;
+  });
+}
+
+/* ================================================================
+   향후계획 카테고리 분류
+================================================================ */
+const PLAN_COLORS = {
+  "이직":         { bg:"rgba(99,102,241,.12)",  color:"#4f46e5", border:"rgba(99,102,241,.28)"  },
+  "이민/해외":    { bg:"rgba(16,185,129,.12)",  color:"#059669", border:"rgba(16,185,129,.28)"  },
+  "자기개발/전업":{ bg:"rgba(139,92,246,.12)",  color:"#7c3aed", border:"rgba(139,92,246,.28)"  },
+  "이직/휴식":    { bg:"rgba(6,182,212,.12)",   color:"#0891b2", border:"rgba(6,182,212,.28)"   },
+  "기타":         { bg:"rgba(245,158,11,.12)",  color:"#b45309", border:"rgba(245,158,11,.28)"  },
+};
+function categorizePlan(text) {
+  if (!text) return "기타";
+  const t = text;
+  if (t.includes("이민")) return "이민/해외";
+  if (t.includes("자기개발") || t.includes("전업")) return "자기개발/전업";
+  if (t.includes("휴식") && t.includes("이직")) return "이직/휴식";
+  if (t.includes("이직")) return "이직";
+  if (t === "기타") return "기타";
+  return "기타";
+}
+
+/* ================================================================
+   키워드 팔레트 (순환)
+================================================================ */
+const KW_PAL = [
+  { bg:"rgba(99,102,241,.1)",  color:"#4f46e5", border:"rgba(99,102,241,.22)"  },
+  { bg:"rgba(244,63,94,.1)",   color:"#e11d48", border:"rgba(244,63,94,.22)"   },
+  { bg:"rgba(245,158,11,.1)",  color:"#b45309", border:"rgba(245,158,11,.22)"  },
+  { bg:"rgba(16,185,129,.1)",  color:"#059669", border:"rgba(16,185,129,.22)"  },
+  { bg:"rgba(139,92,246,.1)",  color:"#7c3aed", border:"rgba(139,92,246,.22)"  },
+  { bg:"rgba(6,182,212,.1)",   color:"#0891b2", border:"rgba(6,182,212,.22)"   },
+];
+const SAT_LABEL_COLORS = {
+  "매우만족": "#059669", "매우 만족": "#059669",
+  "만족":     "#34d399",
+  "보통":     "#d97706",
+  "불만족":   "#e11d48",
+  "매우불만족":"#9f1239", "매우 불만족":"#9f1239",
+};
+const DONUT_SAT_COLORS  = ["#059669","#34d399","#d97706","#e11d48","#9f1239"];
+const DONUT_SAT_LABELS  = ["매우만족","만족","보통","불만족","매우불만족"];
+const PLAN_PALETTE = ["#6366f1","#10b981","#8b5cf6","#06b6d4","#f59e0b","#f43f5e"];
+
+/* Chart 인스턴스 */
+let satChart = null, planChart = null;
+
+/* ================================================================
+   날짜 배지
+================================================================ */
+function renderDateBadge() {
+  const d = new Date();
+  document.getElementById("today-badge").textContent =
+    `${d.getFullYear()}. ${d.getMonth()+1}. ${d.getDate()}.`;
+  document.getElementById("data-count-badge").textContent = `${surveyData.length}건`;
+}
+
+/* ================================================================
+   KPI 카드
+================================================================ */
+function renderKPI() {
+  const n = surveyData.length;
+  // 전반적 만족도 평균
+  const scores = surveyData.map(r => toScore(r.overallSat)).filter(v => v > 0);
+  const avg = scores.length ? (scores.reduce((a,b)=>a+b,0)/scores.length) : 0;
+  const avgLabel = avg >= 4.5 ? "매우 만족 수준" : avg >= 3.5 ? "만족 수준" : avg >= 2.5 ? "보통 수준" : "불만족 수준";
+
+  // 가장 많이 언급된 퇴직사유
+  const freq = {};
+  surveyData.forEach(r => parseReasons(r.exitReason).forEach(k => { freq[k] = (freq[k]||0)+1; }));
+  const topReason = Object.entries(freq).sort((a,b)=>b[1]-a[1])[0];
+
+  const cards = [
+    { theme:"i", icon:"📋", label:"총 설문 응답 수", value:n, sub:`수집된 퇴직설문조사 · <b>총 ${n}건</b>` },
+    { theme:"e", icon:"⭐", label:"전반적 만족도 평균", value:avg.toFixed(1), sub:`<b>${avgLabel}</b> · 5점 척도 기준` },
+    { theme:"a", icon:"🔑", label:"가장 많이 언급된 퇴직사유", value:topReason?.[1]||0, sub:`<b>${topReason?.[0]||"—"}</b> · ${topReason?.[1]||0}명 응답` },
+  ];
+
+  document.getElementById("kpi-grid").innerHTML = cards.map(c => `
+    <div class="card kpi-card kpi--${c.theme}">
+      <div class="kpi-label">${c.label}</div>
+      <div class="kpi-num">${c.value}</div>
+      <div class="kpi-sub">${c.sub}</div>
+      <div class="kpi-icon">${c.icon}</div>
+    </div>
+  `).join("");
+}
+
+/* ================================================================
+   전반적 만족도 도넛 차트
+================================================================ */
+function renderSatDonut() {
+  if (satChart) { satChart.destroy(); satChart = null; }
+  const scores = surveyData.map(r => toScore(r.overallSat)).filter(v=>v>0);
+  const avg = scores.length ? (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1) : "—";
+  document.getElementById("donut-avg").textContent = avg;
+
+  // 분포 계산
+  const dist = {};
+  surveyData.forEach(r => { const k = r.overallSat?.trim(); if (k) dist[k] = (dist[k]||0)+1; });
+  const labels = DONUT_SAT_LABELS.filter(l => dist[l]);
+  const values = labels.map(l => dist[l]);
+  const colors = labels.map(l => DONUT_SAT_COLORS[DONUT_SAT_LABELS.indexOf(l)]);
+
+  satChart = new Chart(document.getElementById("satDonut"), {
+    type:"doughnut",
+    data:{
+      labels,
+      datasets:[{
+        data:values,
+        backgroundColor: colors.map(c=>c+"28"),
+        borderColor: colors,
+        borderWidth:2,
+        hoverBackgroundColor: colors.map(c=>c+"44"),
+        hoverBorderWidth:3,
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, cutout:"72%",
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:"#fff",borderColor:"#e2e8f0",borderWidth:1,
+          titleColor:"#0f172a",bodyColor:"#64748b",padding:12,
+          callbacks:{ label: ctx => ` ${ctx.raw}명 (${Math.round(ctx.raw/surveyData.length*100)}%)` }
+        }
+      },
+      animation:{duration:800,easing:"easeOutQuart"}
+    }
+  });
+
+  const total = surveyData.length;
+  document.getElementById("sat-legend").innerHTML = labels.map((l,i) => {
+    const pct = Math.round(values[i]/total*100);
+    return `
+      <div>
+        <div class="l-row">
+          <div class="l-left"><div class="l-dot" style="background:${colors[i]}"></div><span class="l-name">${l}</span></div>
+          <span class="l-val">${values[i]}명 (${pct}%)</span>
+        </div>
+        <div class="l-track"><div class="l-fill" style="width:${pct}%;background:${colors[i]};"></div></div>
+      </div>
+    `;
+  }).join("");
+}
+
+/* ================================================================
+   세부 항목별 평균 (커스텀 바)
+================================================================ */
+function renderAvgBars() {
+  const items = [
+    { label:"전반적 만족도", key:"overallSat" },
+    { label:"보상 수준",     key:"comp"       },
+    { label:"업무량 적절성", key:"workload"   },
+    { label:"상사와의 관계", key:"supervisor" },
+    { label:"성장 기회",     key:"growth"     },
+    { label:"조직 문화",     key:"culture"    },
+  ];
+
+  const html = items.map(item => {
+    const vals = surveyData.map(r => toScore(r[item.key])).filter(v=>v>0);
+    const avg  = vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : 0;
+    const pct  = (avg / 5) * 100;
+    const color = avg >= 4 ? "#059669" : avg >= 3 ? "#d97706" : "#e11d48";
+    const bgColor = avg >= 4 ? "rgba(16,185,129,.15)" : avg >= 3 ? "rgba(245,158,11,.15)" : "rgba(244,63,94,.15)";
+    return `
+      <div class="avg-row">
+        <div class="avg-label">${item.label}</div>
+        <div class="avg-bar-bg">
+          <div class="avg-bar-fill" style="width:${pct}%;background:${color};"></div>
+        </div>
+        <div class="avg-score" style="color:${color};">${avg.toFixed(1)}</div>
+      </div>
+    `;
+  }).join("");
+  document.getElementById("avg-bars").innerHTML = html;
+}
+
+/* ================================================================
+   퇴직사유 키워드 클라우드
+================================================================ */
+function renderKeywords() {
+  const freq = {};
+  surveyData.forEach(r => parseReasons(r.exitReason).forEach(k => { freq[k] = (freq[k]||0)+1; }));
+  const sorted = Object.entries(freq).sort((a,b)=>b[1]-a[1]);
+  const maxF = sorted[0]?.[1]||1;
+
+  document.getElementById("kw-cloud").innerHTML = sorted.map(([kw,cnt],i) => {
+    const pal = KW_PAL[i % KW_PAL.length];
+    const r = cnt/maxF;
+    const fs = (0.8 + r*0.65).toFixed(2)+"rem";
+    const py = Math.round(6 + r*7)+"px";
+    const px = Math.round(12 + r*10)+"px";
+    return `<span class="kw-badge" title="${cnt}명 언급"
+      style="background:${pal.bg};color:${pal.color};border:1px solid ${pal.border};font-size:${fs};padding:${py} ${px};">
+      ${kw}${cnt>=2?`<span class="kw-cnt" style="font-size:.65em;">${cnt}</span>`:""}
+    </span>`;
+  }).join("");
+}
+
+/* ================================================================
+   향후 계획 도넛 차트
+================================================================ */
+function renderPlanDonut() {
+  if (planChart) { planChart.destroy(); planChart = null; }
+  const dist = {};
+  surveyData.forEach(r => {
+    const cat = categorizePlan(r.futurePlan);
+    dist[cat] = (dist[cat]||0)+1;
+  });
+  const labels = Object.keys(dist);
+  const values = Object.values(dist);
+  const colors = labels.map((l,i) => PLAN_COLORS[l]?.color || PLAN_PALETTE[i%PLAN_PALETTE.length]);
+  const total  = surveyData.length;
+  document.getElementById("plan-total").textContent = total;
+
+  planChart = new Chart(document.getElementById("planDonut"), {
+    type:"doughnut",
+    data:{
+      labels,
+      datasets:[{
+        data:values,
+        backgroundColor: colors.map(c=>c+"28"),
+        borderColor: colors,
+        borderWidth:2,
+        hoverBackgroundColor: colors.map(c=>c+"44"),
+        hoverBorderWidth:3,
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, cutout:"72%",
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:"#fff",borderColor:"#e2e8f0",borderWidth:1,
+          titleColor:"#0f172a",bodyColor:"#64748b",padding:12,
+          callbacks:{ label: ctx => ` ${ctx.raw}명` }
+        }
+      },
+      animation:{duration:800,easing:"easeOutQuart"}
+    }
+  });
+
+  document.getElementById("plan-legend").innerHTML = labels.map((l,i) => {
+    const pct = Math.round(values[i]/total*100);
+    return `
+      <div>
+        <div class="l-row">
+          <div class="l-left"><div class="l-dot" style="background:${colors[i]}"></div><span class="l-name">${l}</span></div>
+          <span class="l-val">${values[i]}명</span>
+        </div>
+        <div class="l-track"><div class="l-fill" style="width:${pct}%;background:${colors[i]};"></div></div>
+      </div>
+    `;
+  }).join("");
+}
+
+/* ================================================================
+   테이블
+================================================================ */
+function renderTable() {
+  document.getElementById("tbl-badge").textContent = `${surveyData.length}건`;
+  document.getElementById("tbl-body").innerHTML = surveyData.map(r => {
+    const reasons = parseReasons(r.exitReason);
+    const planCat = categorizePlan(r.futurePlan);
+    const pc = PLAN_COLORS[planCat] || { bg:"rgba(245,158,11,.1)",color:"#b45309",border:"rgba(245,158,11,.25)" };
+    return `
+      <tr>
+        <td class="td-name">${r.name}</td>
+        <td>${r.empId}</td>
+        <td class="td-dept">${r.dept}</td>
+        <td>${satChipHTML(r.overallSat)}</td>
+        <td>${satChipHTML(r.comp)}</td>
+        <td>${satChipHTML(r.workload)}</td>
+        <td>${satChipHTML(r.supervisor)}</td>
+        <td>${satChipHTML(r.growth)}</td>
+        <td>${satChipHTML(r.culture)}</td>
+        <td style="max-width:180px;">
+          <div style="display:flex;flex-wrap:wrap;gap:4px;">
+            ${reasons.slice(0,3).map(k=>`<span class="reason-chip" style="background:rgba(99,102,241,.08);color:#4f46e5;border:1px solid rgba(99,102,241,.2);">${k}</span>`).join("")}
+          </div>
+        </td>
+        <td><span class="reason-chip" style="background:${pc.bg};color:${pc.color};border:1px solid ${pc.border};">${planCat}</span></td>
+        <td class="td-long" title="${r.suggestions}">${r.suggestions||"—"}</td>
+      </tr>
+    `;
+  }).join("");
+}
+
+/* ================================================================
+   전체 대시보드 새로고침
+================================================================ */
+function refresh() {
+  renderDateBadge();
+  renderKPI();
+  renderSatDonut();
+  renderAvgBars();
+  renderKeywords();
+  renderPlanDonut();
+  renderTable();
+}
+
+/* ================================================================
+   구글 시트 자동 연동
+   — 페이지 로드 시 자동 실행
+   — 헤더 연동 배지 클릭 시 수동 새로고침
+================================================================ */
+async function fetchFromSheets() {
+  setSyncBadge("loading");
+  try {
+    const res = await fetch(SHEET_URL);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+    const data = parseSheetCSV(text);
+    if (!data.length) throw new Error("데이터 없음");
+    surveyData = data;
+    refresh();
+    setSyncBadge("ok");
+  } catch (err) {
+    console.warn("구글 시트 연동 실패:", err.message);
+    setSyncBadge("error");
+    refresh(); // 기존 더미 데이터로 표시
+  }
+}
+
+function setSyncBadge(state) {
+  const el = document.getElementById("sync-badge");
+  if (!el) return;
+  const S = {
+    loading: { text:"⏳ 연동 중...",        bg:"rgba(245,158,11,.1)", br:"rgba(245,158,11,.28)", color:"#b45309" },
+    ok:      { text:"🔗 연동됨",             bg:"rgba(16,185,129,.1)", br:"rgba(16,185,129,.28)", color:"#059669" },
+    error:   { text:"⚠️ 연동 실패",          bg:"rgba(244,63,94,.1)",  br:"rgba(244,63,94,.28)",  color:"#e11d48" },
+  };
+  const s = S[state];
+  if (state === "ok") {
+    const t = new Date();
+    s.text = `🔗 연동됨 ${t.getHours()}:${String(t.getMinutes()).padStart(2,"0")}`;
+  }
+  el.textContent = s.text;
+  el.style.cssText = `background:${s.bg};border:1px solid ${s.br};color:${s.color};cursor:pointer;padding:4px 13px;border-radius:100px;font-size:.6875rem;font-weight:600;white-space:nowrap;`;
+}
+
+function parseSheetCSV(text) {
+  const lines = text.replace(/\r/g,"").trim().split("\n");
+  if (lines.length < 2) return [];
+  return lines.slice(1).map((line, idx) => {
+    const c = splitCSV(line);
+    if (!c[0]?.trim()) return null;
+    const info = (c[0]||"").split("/");
+    return {
+      empId:      info[0]?.trim()||"",
+      dept:       info[1]?.trim()||"",
+      name:       info[2]?.trim()||"",
+      overallSat: c[1]?.trim()||"",
+      comp:       c[3]?.trim()||"",
+      workload:   c[4]?.trim()||"",
+      supervisor: c[5]?.trim()||"",
+      growth:     c[7]?.trim()||"",
+      culture:    c[9]?.trim()||"",
+      exitReason: c[11]?.trim()||"",
+      futurePlan: c[12]?.trim()||"",
+      suggestions:c[13]?.trim()||"",
+    };
+  }).filter(Boolean);
+}
+
+function splitCSV(line) {
+  const res=[]; let cur="", inQ=false;
+  for (let i=0;i<line.length;i++) {
+    if (line[i]==='"') inQ=!inQ;
+    else if (line[i]==="," && !inQ) { res.push(cur); cur=""; }
+    else cur+=line[i];
+  }
+  res.push(cur); return res;
+}
+
+/* ================================================================
+   초기화
+================================================================ */
+document.addEventListener("DOMContentLoaded", fetchFromSheets);
+</script>
+</body>
+</html>
