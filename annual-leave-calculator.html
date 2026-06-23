@@ -4,14 +4,23 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>신규입사자 연차 계산기</title>
+  <link rel="manifest" href="/manifest-calculator.json">
+  <meta name="theme-color" content="#1a237e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="연차계산기">
+  <meta name="mobile-web-app-capable" content="yes">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Malgun Gothic', '맑은 고딕', AppleGothic, sans-serif;
       background: #f0f2f5; color: #333; min-height: 100vh;
+      padding-top: env(safe-area-inset-top);
       padding-bottom: env(safe-area-inset-bottom);
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
     }
-    .container { max-width: 880px; margin: 0 auto; padding: 24px 16px 60px; }
+    .container { max-width: 880px; margin: 0 auto; padding: 24px 16px calc(60px + env(safe-area-inset-bottom)); }
 
     .doc-header {
       background: linear-gradient(135deg, #1a237e, #3949ab);
