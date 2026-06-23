@@ -233,6 +233,9 @@ app.get('/api/employee-info/:empNo', async (req, res) => {
   try {
     const { empNo } = req.params;
     const today = new Date().toISOString().slice(0, 10);
+    const currentYear = new Date().getFullYear();
+    const reqYear = parseInt(req.query.year) || currentYear;
+    const balanceDate = reqYear < currentYear ? `${reqYear}-12-31` : today;
 
     // 출퇴근 직원 목록에서 empId 조회
     const employees = await duallFetch('/attendance/employees');
@@ -240,7 +243,7 @@ app.get('/api/employee-info/:empNo', async (req, res) => {
     if (!emp) return res.status(404).json({ error: '사원번호를 찾을 수 없습니다.' });
 
     // 잔여연차 직접 조회 (Duall 시스템 계산값 그대로 사용)
-    const leaveBalances = await duallFetch(`/attendance/employee/${emp.empId}/leave-balance`, { date: today });
+    const leaveBalances = await duallFetch(`/attendance/employee/${emp.empId}/leave-balance`, { date: balanceDate });
     const annual = leaveBalances.find(l => l.vacationGroupName && l.vacationGroupName.includes('연차'));
 
     res.json({
@@ -249,6 +252,7 @@ app.get('/api/employee-info/:empNo', async (req, res) => {
       dept: emp.orgNm || '',
       position: emp.posNm || '',
       hireDate: emp.employmentDate || null,
+      year: reqYear,
       totalDays: annual ? annual.totalDays : 0,
       usedDays: annual ? annual.usedDays : 0,
       remainingDays: annual ? annual.remainingDays : 0,

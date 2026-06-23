@@ -190,6 +190,7 @@
           <div class="form-group">
             <input type="text" id="empNo" placeholder="사원번호 입력" inputmode="numeric" maxlength="20" />
           </div>
+          <select id="lookupYear" style="height:42px;border:1.5px solid #ddd;border-radius:8px;padding:0 10px;font-size:14px;font-family:inherit;flex-shrink:0;"></select>
           <button class="btn-lookup" id="lookupBtn" onclick="lookupEmployee()">근태시스템 조회</button>
         </div>
         <div class="emp-info" id="empInfo"></div>
@@ -634,14 +635,15 @@ async function lookupEmployee() {
   info.style.display = 'none';
 
   try {
-    const res = await fetch(`https://memo-app-6iib.onrender.com/api/employee-info/${encodeURIComponent(empNo)}`);
+    const year = document.getElementById('lookupYear').value;
+    const res = await fetch(`https://memo-app-6iib.onrender.com/api/employee-info/${encodeURIComponent(empNo)}?year=${year}`);
     let data;
     try { data = await res.json(); } catch { throw new Error('서버 응답 오류'); }
     if (!res.ok) throw new Error(data.error || '조회 실패');
 
     // 사용연차 자동 입력
     document.getElementById('usedDays').value = data.usedDays ?? 0;
-    document.getElementById('usedDaysHint').textContent = `✓ 근태시스템 기준 (총 ${data.totalDays}일 중 ${data.usedDays}일 사용)`;
+    document.getElementById('usedDaysHint').textContent = `✓ ${data.year}년 근태시스템 기준 (총 ${data.totalDays}일 중 ${data.usedDays}일 사용)`;
     document.getElementById('usedDaysHint').style.color = '#2e7d32';
 
     // 입사일 자동 입력
@@ -654,8 +656,8 @@ async function lookupEmployee() {
     }
 
     showEmpInfo('ok',
-      `✓ ${data.name} · ${data.dept}${data.position ? ' · ' + data.position : ''} — ` +
-      `총 ${data.totalDays}일 / 사용 ${data.usedDays}일 / 잔여 ${data.remainingDays}일` +
+      `✓ ${data.name} · ${data.dept}${data.position ? ' · ' + data.position : ''}<br>` +
+      `${data.year}년 기준 — 총 ${data.totalDays}일 / 사용 ${data.usedDays}일 / 잔여 ${data.remainingDays}일` +
       (data.hireDate ? ` · 입사일 ${data.hireDate.slice(0,10)}` : '')
     );
     render();
@@ -673,6 +675,18 @@ function showEmpInfo(type, msg) {
   el.innerHTML = msg;
   el.style.display = 'block';
 }
+
+// 연도 드롭다운 초기화
+(function() {
+  const sel = document.getElementById('lookupYear');
+  const cur = new Date().getFullYear();
+  for (let y = cur; y >= cur - 3; y--) {
+    const opt = document.createElement('option');
+    opt.value = y;
+    opt.textContent = `${y}년`;
+    sel.appendChild(opt);
+  }
+})();
 
 // 이벤트 바인딩
 document.getElementById('hireDate').addEventListener('input', render);
