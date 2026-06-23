@@ -260,6 +260,7 @@ app.get('/api/employee-info/:empNo', async (req, res) => {
       totalDays: annual ? annual.totalDays : 0,
       usedDays: annual ? annual.usedDays : 0,
       remainingDays: annual ? annual.remainingDays : 0,
+      _debug_emp: emp,
     });
   } catch (err) {
     console.error('[employee-info]', err.message);
