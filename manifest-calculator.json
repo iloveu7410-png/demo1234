@@ -1,5 +1,5 @@
 {
-  "name": "신규입사자 연차 계산기",
+  "name": "연차 계산기",
   "short_name": "연차계산기",
   "description": "회계년도/입사일자 기준 연차 발생 및 잔여연차 계산",
   "start_url": "/annual-leave-calculator.html",

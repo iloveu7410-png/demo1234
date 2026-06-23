@@ -136,6 +136,37 @@
     .empty-state p { font-size: 14px; }
 
     .tag { display: inline-block; font-size: 10px; background: #3949ab; color: white; border-radius: 4px; padding: 2px 6px; margin-left: 6px; vertical-align: middle; }
+
+    /* 사번 조회 */
+    .lookup-row { display: flex; gap: 8px; align-items: flex-end; }
+    .lookup-row .form-group { flex: 1; margin: 0; }
+    .btn-lookup {
+      flex-shrink: 0; height: 42px; padding: 0 18px;
+      background: #3949ab; color: white; border: none; border-radius: 8px;
+      font-size: 14px; font-family: inherit; font-weight: 600; cursor: pointer;
+      white-space: nowrap; transition: background 0.15s;
+    }
+    .btn-lookup:hover { background: #1a237e; }
+    .btn-lookup:disabled { background: #9fa8da; cursor: not-allowed; }
+    .emp-info {
+      margin-top: 10px; padding: 10px 14px; border-radius: 8px;
+      font-size: 13px; display: none;
+    }
+    .emp-info.ok  { background: #e8f5e9; color: #1b5e20; border: 1px solid #a5d6a7; }
+    .emp-info.err { background: #ffebee; color: #b71c1c; border: 1px solid #ef9a9a; }
+
+    /* 링크 카드 */
+    .link-list { display: flex; flex-direction: column; gap: 8px; }
+    .link-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px; border-radius: 8px; border: 1.5px solid #e0e0e0;
+      text-decoration: none; color: #333; font-size: 13px;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .link-item:hover { border-color: #3949ab; background: #f7f8fc; }
+    .link-item .link-icon { font-size: 20px; flex-shrink: 0; }
+    .link-item .link-title { font-weight: 700; font-size: 13px; }
+    .link-item .link-desc  { font-size: 11px; color: #888; margin-top: 1px; }
   </style>
 </head>
 <body>
@@ -143,15 +174,26 @@
 
   <!-- 헤더 -->
   <div class="doc-header">
-    <h1>신규입사자 연차 계산기</h1>
-    <p>입사일자와 사용 연차를 입력하면 잔여연차를 자동으로 계산합니다.</p>
-    <p class="law-note">근로기준법 제60조 기준 · 회계연도(1.1~12.31) 기준 및 입사일자 기준 모두 제공</p>
+    <h1>연차 계산기</h1>
+    <p>입사일자를 입력하면 회계년도/입사일자 기준 발생연차와 잔여연차를 계산합니다.</p>
+    <p class="law-note">근로기준법 제60조 기준 · 사원번호로 근태시스템에서 사용연차 자동 조회 가능</p>
   </div>
 
   <!-- 입력 카드 -->
   <div class="card">
     <div class="card-header"><h3>입력 정보</h3></div>
     <div class="card-body">
+      <!-- 사번 조회 -->
+      <div style="margin-bottom:16px;">
+        <label style="display:block;font-size:12px;color:#555;margin-bottom:6px;font-weight:600;">사원번호로 사용연차 자동 조회</label>
+        <div class="lookup-row">
+          <div class="form-group">
+            <input type="text" id="empNo" placeholder="사원번호 입력" inputmode="numeric" maxlength="20" />
+          </div>
+          <button class="btn-lookup" id="lookupBtn" onclick="lookupEmployee()">근태시스템 조회</button>
+        </div>
+        <div class="emp-info" id="empInfo"></div>
+      </div>
       <div class="input-grid">
         <div class="form-group">
           <label>입사일자</label>
@@ -161,7 +203,7 @@
         <div class="form-group">
           <label>사용한 연차 (일)</label>
           <input type="number" id="usedDays" min="0" max="99" value="0" placeholder="0" />
-          <div class="hint">현재까지 사용한 연차 일수를 입력하세요</div>
+          <div class="hint" id="usedDaysHint">근태시스템 조회 시 자동 입력됩니다</div>
         </div>
       </div>
     </div>
@@ -171,7 +213,37 @@
   <div id="resultArea">
     <div class="empty-state">
       <div class="icon">📅</div>
-      <p>입사일자를 선택하면 연차가 계산됩니다</p>
+      <p>입사일자를 입력하면 연차가 계산됩니다</p>
+    </div>
+  </div>
+
+  <!-- 링크 카드 -->
+  <div class="card">
+    <div class="card-header"><h3>관련 링크</h3></div>
+    <div class="card-body">
+      <div class="link-list">
+        <a class="link-item" href="https://atd.duallmaster.com/" target="_blank" rel="noopener">
+          <span class="link-icon">🕐</span>
+          <div>
+            <div class="link-title">근태시스템 (Duall)</div>
+            <div class="link-desc">atd.duallmaster.com — 출퇴근 기록, 연차 신청 및 현황 조회</div>
+          </div>
+        </a>
+        <a class="link-item" href="https://konawiki.konai.com/pages/viewpage.action?pageId=227425105" target="_blank" rel="noopener">
+          <span class="link-icon">📋</span>
+          <div>
+            <div class="link-title">근태제도 종합안내</div>
+            <div class="link-desc">코나위키 — 출퇴근, 휴가, 초과근무 등 근태 관련 제도 전체 안내</div>
+          </div>
+        </a>
+        <a class="link-item" href="https://konawiki.konai.com/pages/viewpage.action?pageId=236263560" target="_blank" rel="noopener">
+          <span class="link-icon">🗓</span>
+          <div>
+            <div class="link-title">연차휴가 종합안내</div>
+            <div class="link-desc">코나위키 — 연차 발생 기준, 사용 방법, 연차촉진 제도 상세 안내</div>
+          </div>
+        </a>
+      </div>
     </div>
   </div>
 
@@ -550,9 +622,49 @@ function toggleDetail(id, btn) {
   btn.textContent = btn.textContent.replace(open ? '▶' : '▼', open ? '▼' : '▶');
 }
 
+// ── 근태시스템 사번 조회 ───────────────────────────────────────────────
+async function lookupEmployee() {
+  const empNo = document.getElementById('empNo').value.trim();
+  const info  = document.getElementById('empInfo');
+  const btn   = document.getElementById('lookupBtn');
+  if (!empNo) { showEmpInfo('err', '사원번호를 입력해주세요.'); return; }
+
+  btn.disabled = true;
+  btn.textContent = '조회 중…';
+  info.style.display = 'none';
+
+  try {
+    const res  = await fetch(`/api/employee-info/${encodeURIComponent(empNo)}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '조회 실패');
+
+    document.getElementById('usedDays').value = data.usedDays ?? 0;
+    document.getElementById('usedDaysHint').textContent = `✓ 근태시스템 기준 (총 ${data.totalDays}일 중 ${data.usedDays}일 사용)`;
+    document.getElementById('usedDaysHint').style.color = '#2e7d32';
+    showEmpInfo('ok',
+      `✓ ${data.name} · ${data.dept}${data.position ? ' · ' + data.position : ''} — ` +
+      `총 ${data.totalDays}일 / 사용 ${data.usedDays}일 / 잔여 ${data.remainingDays}일`
+    );
+    render();
+  } catch (e) {
+    showEmpInfo('err', `⚠ ${e.message}`);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '근태시스템 조회';
+  }
+}
+
+function showEmpInfo(type, msg) {
+  const el = document.getElementById('empInfo');
+  el.className = `emp-info ${type}`;
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
 // 이벤트 바인딩
 document.getElementById('hireDate').addEventListener('input', render);
 document.getElementById('usedDays').addEventListener('input', render);
+document.getElementById('empNo').addEventListener('keydown', e => { if (e.key === 'Enter') lookupEmployee(); });
 
 // 초기 렌더
 render();
