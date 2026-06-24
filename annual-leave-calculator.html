@@ -475,7 +475,7 @@ function render() {
   }
 
   const hireDate = parseDate(hireDateRaw);
-  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const today = getBaseDate();
 
   if (!hireDate || isNaN(hireDate.getTime())) {
     input.style.borderColor = '#c62828';
@@ -496,6 +496,16 @@ function render() {
   input.style.borderColor = '#2e7d32';
   hint.textContent = `✓ ${formatDate(hireDate)}`;
   hint.style.color = '#2e7d32';
+
+  // 기준일 안내 문구
+  const realToday = new Date(); realToday.setHours(0, 0, 0, 0);
+  const notice = document.getElementById('baseDateNotice');
+  if (today.getTime() !== realToday.getTime()) {
+    notice.textContent = `📅 ${formatDate(today)} 기준으로 조회 중`;
+    notice.style.display = 'block';
+  } else {
+    notice.style.display = 'none';
+  }
 
   const fiscal = calcFiscalYearBasis(hireDate, today);
   const anniv  = calcAnniversaryBasis(hireDate, today);
@@ -547,7 +557,7 @@ function render() {
       <div class="card-header"><h3>근속 현황</h3></div>
       <div class="card-body" style="display:flex;gap:24px;flex-wrap:wrap;">
         <div><div style="font-size:11px;color:#888;margin-bottom:4px;">입사일</div><div style="font-size:16px;font-weight:700;">${formatDate(hireDate)}</div></div>
-        <div><div style="font-size:11px;color:#888;margin-bottom:4px;">오늘</div><div style="font-size:16px;font-weight:700;">${formatDate(today)}</div></div>
+        <div><div style="font-size:11px;color:#888;margin-bottom:4px;">${today.getTime() !== realToday.getTime() ? '기준일' : '오늘'}</div><div style="font-size:16px;font-weight:700;">${formatDate(today)}</div></div>
         <div><div style="font-size:11px;color:#888;margin-bottom:4px;">근속기간</div><div style="font-size:16px;font-weight:700;color:#3949ab;">${serviceTxt}</div></div>
         <div><div style="font-size:11px;color:#888;margin-bottom:4px;">사용 연차</div><div style="font-size:16px;font-weight:700;color:#e65100;">${usedDays}일</div></div>
       </div>
