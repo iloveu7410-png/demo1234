@@ -466,6 +466,17 @@ function render() {
   const hint = document.getElementById('hireDateHint');
   const input = document.getElementById('hireDate');
 
+  const today = getBaseDate();
+  const realToday = new Date(); realToday.setHours(0, 0, 0, 0);
+  const isCustomDate = today.getTime() !== realToday.getTime();
+  const notice = document.getElementById('baseDateNotice');
+  if (isCustomDate) {
+    notice.textContent = `📅 ${formatDate(today)} 기준으로 조회 중`;
+    notice.style.display = 'block';
+  } else {
+    notice.style.display = 'none';
+  }
+
   if (!hireDateRaw) {
     input.style.borderColor = '';
     hint.textContent = 'YYYYMMDD 또는 YYYY-MM-DD 형식으로 입력';
@@ -475,7 +486,6 @@ function render() {
   }
 
   const hireDate = parseDate(hireDateRaw);
-  const today = getBaseDate();
 
   if (!hireDate || isNaN(hireDate.getTime())) {
     input.style.borderColor = '#c62828';
@@ -487,25 +497,16 @@ function render() {
 
   if (hireDate > today) {
     input.style.borderColor = '#c62828';
-    hint.textContent = '입사일자가 오늘 이후입니다';
+    const afterLabel = isCustomDate ? '기준일 이후입니다' : '오늘 이후입니다';
+    hint.textContent = `입사일자가 ${afterLabel}`;
     hint.style.color = '#c62828';
-    area.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><p>입사일자가 오늘 이후입니다. 다시 확인해주세요.</p></div>`;
+    area.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><p>입사일자가 ${afterLabel}. 다시 확인해주세요.</p></div>`;
     return;
   }
 
   input.style.borderColor = '#2e7d32';
   hint.textContent = `✓ ${formatDate(hireDate)}`;
   hint.style.color = '#2e7d32';
-
-  // 기준일 안내 문구
-  const realToday = new Date(); realToday.setHours(0, 0, 0, 0);
-  const notice = document.getElementById('baseDateNotice');
-  if (today.getTime() !== realToday.getTime()) {
-    notice.textContent = `📅 ${formatDate(today)} 기준으로 조회 중`;
-    notice.style.display = 'block';
-  } else {
-    notice.style.display = 'none';
-  }
 
   const fiscal = calcFiscalYearBasis(hireDate, today);
   const anniv  = calcAnniversaryBasis(hireDate, today);
