@@ -167,6 +167,36 @@
     .link-item .link-icon { font-size: 20px; flex-shrink: 0; }
     .link-item .link-title { font-weight: 700; font-size: 13px; }
     .link-item .link-desc  { font-size: 11px; color: #888; margin-top: 1px; }
+
+    /* 기준일 입력 행 */
+    .base-date-row {
+      display: flex; align-items: center; gap: 8px; margin-top: 14px;
+      flex-wrap: wrap;
+    }
+    .base-date-row label {
+      font-size: 12px; color: rgba(255,255,255,0.8); white-space: nowrap;
+    }
+    .base-date-input {
+      height: 34px; border: 1.5px solid rgba(255,255,255,0.4);
+      border-radius: 6px; background: rgba(255,255,255,0.15);
+      color: white; padding: 0 10px; font-size: 13px; font-family: inherit;
+      cursor: pointer;
+    }
+    .base-date-input::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
+    .base-date-input:focus { outline: none; border-color: rgba(255,255,255,0.8); }
+    .btn-today {
+      height: 34px; padding: 0 12px; border: 1.5px solid rgba(255,255,255,0.5);
+      border-radius: 6px; background: transparent; color: white;
+      font-size: 12px; font-family: inherit; cursor: pointer; white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .btn-today:hover { background: rgba(255,255,255,0.15); }
+    .base-date-notice {
+      display: none; width: 100%; font-size: 12px;
+      color: rgba(255,255,255,0.9); margin-top: 4px;
+      background: rgba(255,255,255,0.1); border-radius: 4px;
+      padding: 4px 10px;
+    }
   </style>
 </head>
 <body>
