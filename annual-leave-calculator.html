@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>신규입사자 연차 계산기</title>
+  <title>연차계산기</title>
   <link rel="manifest" href="/manifest-calculator.json">
   <meta name="theme-color" content="#1a237e">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -231,18 +231,10 @@
         </div>
         <div class="emp-info" id="empInfo"></div>
       </div>
-      <div class="input-grid">
-        <div class="form-group">
-          <label>입사일자</label>
-          <input type="text" id="hireDate" placeholder="20260101" maxlength="10" inputmode="numeric" />
-          <div class="hint" id="hireDateHint">YYYYMMDD 또는 YYYY-MM-DD 형식으로 입력</div>
-        </div>
-        <div class="form-group">
-          <label>사용한 연차 (일)</label>
-          <input type="number" id="usedDays" min="0" max="99" value="0" placeholder="0" />
-          <div class="hint" id="usedDaysHint">근태시스템 조회 시 자동 입력됩니다</div>
-        </div>
-      </div>
+      <input type="hidden" id="hireDate" />
+      <span id="hireDateHint" style="display:none;"></span>
+      <input type="hidden" id="usedDays" value="0" />
+      <span id="usedDaysHint" style="display:none;"></span>
     </div>
   </div>
 
