@@ -542,7 +542,7 @@ function render() {
   }
 
   // ── 근태시스템 기준 실제 잔여연차 카드 ──
-  const actualCard = buildActualCard();
+  const actualCard = buildActualCard(fiscal);
 
   area.innerHTML = actualCard + `
     <!-- 근속 요약 -->
@@ -686,13 +686,16 @@ function render() {
   `;
 }
 
-function buildActualCard() {
+function buildActualCard(fiscalData) {
   if (!empLookupResult) return '';
   const { curr, prev, year } = empLookupResult;
 
-  const totalGenerated = (prev ? prev.totalDays : 0) + curr.totalDays;
+  const currTotalDays = fiscalData ? fiscalData.currentYearDays - fiscalData.prevYearDays : curr.totalDays;
+  const currRemainingDays = currTotalDays - curr.usedDays;
+
+  const totalGenerated = (prev ? prev.totalDays : 0) + currTotalDays;
   const totalUsed      = (prev ? prev.usedDays   : 0) + curr.usedDays;
-  const totalRemaining = (prev ? prev.remainingDays : 0) + curr.remainingDays;
+  const totalRemaining = (prev ? prev.remainingDays : 0) + currRemainingDays;
   const color = totalRemaining <= 0 ? '#c62828' : totalRemaining <= 3 ? '#e65100' : '#1b5e20';
 
   const rows = prev
@@ -704,9 +707,9 @@ function buildActualCard() {
       </tr>
       <tr>
         <td style="padding:6px 10px">${year}년</td>
-        <td style="padding:6px 10px;text-align:right">${curr.totalDays}일</td>
+        <td style="padding:6px 10px;text-align:right">${currTotalDays}일</td>
         <td style="padding:6px 10px;text-align:right">${curr.usedDays}일</td>
-        <td style="padding:6px 10px;text-align:right;font-weight:700">${curr.remainingDays}일</td>
+        <td style="padding:6px 10px;text-align:right;font-weight:700">${currRemainingDays}일</td>
       </tr>
       <tr style="border-top:2px solid #1a237e;background:#e8eaf6;font-weight:700">
         <td style="padding:6px 10px">합계</td>
@@ -716,9 +719,9 @@ function buildActualCard() {
       </tr>`
     : `<tr>
         <td style="padding:6px 10px">${year}년</td>
-        <td style="padding:6px 10px;text-align:right">${curr.totalDays}일</td>
+        <td style="padding:6px 10px;text-align:right">${currTotalDays}일</td>
         <td style="padding:6px 10px;text-align:right">${curr.usedDays}일</td>
-        <td style="padding:6px 10px;text-align:right;font-weight:700;color:${color}">${curr.remainingDays}일</td>
+        <td style="padding:6px 10px;text-align:right;font-weight:700;color:${color}">${currRemainingDays}일</td>
       </tr>`;
 
   return `
