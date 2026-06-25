@@ -693,14 +693,36 @@ function buildActualCard(fiscalData) {
   const currTotalDays = fiscalData ? fiscalData.currentYearDays - fiscalData.prevYearDays : curr.totalDays;
   const currRemainingDays = currTotalDays - curr.usedDays;
 
+  const totalGenerated = (prev ? prev.totalDays : 0) + currTotalDays;
+  const totalUsed      = (prev ? prev.usedDays   : 0) + curr.usedDays;
+  const totalRemaining = (prev ? prev.remainingDays : 0) + currRemainingDays;
   const color = currRemainingDays <= 0 ? '#c62828' : currRemainingDays <= 3 ? '#e65100' : '#1b5e20';
 
-  const rows = `<tr>
-      <td style="padding:6px 10px">${year}년</td>
-      <td style="padding:6px 10px;text-align:right">${currTotalDays}일</td>
-      <td style="padding:6px 10px;text-align:right">${curr.usedDays}일</td>
-      <td style="padding:6px 10px;text-align:right;font-weight:700;color:${color}">${currRemainingDays}일</td>
-    </tr>`;
+  const rows = prev
+    ? `<tr>
+        <td style="padding:6px 10px">${year - 1}년</td>
+        <td style="padding:6px 10px;text-align:right">${prev.totalDays}일</td>
+        <td style="padding:6px 10px;text-align:right">${prev.usedDays}일</td>
+        <td style="padding:6px 10px;text-align:right;font-weight:700">${prev.remainingDays}일</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 10px">${year}년</td>
+        <td style="padding:6px 10px;text-align:right">${currTotalDays}일</td>
+        <td style="padding:6px 10px;text-align:right">${curr.usedDays}일</td>
+        <td style="padding:6px 10px;text-align:right;font-weight:700">${currRemainingDays}일</td>
+      </tr>
+      <tr style="border-top:2px solid #1a237e;background:#e8eaf6;font-weight:700">
+        <td style="padding:6px 10px">합계</td>
+        <td style="padding:6px 10px;text-align:right">${totalGenerated}일</td>
+        <td style="padding:6px 10px;text-align:right">${totalUsed}일</td>
+        <td style="padding:6px 10px;text-align:right;color:${color}">${totalRemaining}일</td>
+      </tr>`
+    : `<tr>
+        <td style="padding:6px 10px">${year}년</td>
+        <td style="padding:6px 10px;text-align:right">${currTotalDays}일</td>
+        <td style="padding:6px 10px;text-align:right">${curr.usedDays}일</td>
+        <td style="padding:6px 10px;text-align:right;font-weight:700;color:${color}">${currRemainingDays}일</td>
+      </tr>`;
 
   return `
     <div class="card" style="border:2px solid #1a237e;">
@@ -711,11 +733,12 @@ function buildActualCard(fiscalData) {
         <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;margin-bottom:12px;">
           <div>
             <div style="font-size:11px;color:#888;margin-bottom:2px;">사용 가능 잔여연차</div>
-            <div style="font-size:40px;font-weight:800;color:${color};line-height:1">${currRemainingDays}<span style="font-size:16px;font-weight:400;color:#777;margin-left:2px">일</span></div>
+            <div style="font-size:40px;font-weight:800;color:${color};line-height:1">${totalRemaining}<span style="font-size:16px;font-weight:400;color:#777;margin-left:2px">일</span></div>
           </div>
           <div style="font-size:13px;color:#555;line-height:2">
-            <div>총 발생 <strong>${currTotalDays}일</strong></div>
-            <div>총 사용 <strong>${curr.usedDays}일</strong></div>
+            <div>총 발생 <strong>${totalGenerated}일</strong></div>
+            <div>총 사용 <strong>${totalUsed}일</strong></div>
+            ${prev ? `<div style="font-size:11px;color:#888">${year-1}년 잔여 ${prev.remainingDays}일 + ${year}년 잔여 ${currRemainingDays}일</div>` : ''}
           </div>
         </div>
         <table style="width:100%;border-collapse:collapse;font-size:13px;">
