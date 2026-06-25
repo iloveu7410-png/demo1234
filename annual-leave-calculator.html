@@ -422,8 +422,8 @@ function calcFiscalYearBasis(hireDate, today) {
 
       if (mAtJan1 < 12) {
         // 1월1일 기준 1년 미만: 비례 부여
-        days = Math.ceil(mAtJan1 / 12 * 15);
-        basis = `1.1 기준 ${mAtJan1}개월 → ⌈${mAtJan1}/12 × 15⌉ = ${days}일`;
+        days = (mAtJan1 * 15) / 12;
+        basis = `1.1 기준 ${mAtJan1}개월 → ${mAtJan1}/12 × 15 = ${days}일`;
       } else {
         days = annualEntitlement(completeYrs);
         basis = `1.1 기준 근속 ${completeYrs}년 → ${days}일`;
