@@ -408,7 +408,7 @@ function calcFiscalYearBasis(hireDate, today) {
     const isHireYear = hireDate.getFullYear() === y && hireDate >= jan1;
     if (isHireYear) {
       // 입사 연도: 입사월부터 연말까지 월단위 발생
-      const mToYearEnd = completedMonths(hireDate, jan1Next);
+      const mToYearEnd = completedMonths(hireDate, dec31);
       days = Math.min(mToYearEnd, 11);
       basis = `입사월부터 ${mToYearEnd}개월 → ${days}일 (월단위)`;
       if (isCurrent) {
