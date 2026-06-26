@@ -407,14 +407,22 @@ function calcFiscalYearBasis(hireDate, today) {
 
     const isHireYear = hireDate.getFullYear() === y && hireDate >= jan1;
     if (isHireYear) {
-      // 입사 연도: 입사월부터 연말까지 월단위 발생
-      const mToYearEnd = completedMonths(hireDate, dec31);
-      days = Math.min(mToYearEnd, 11);
-      basis = `입사월부터 ${mToYearEnd}개월 → ${days}일 (월단위)`;
-      if (isCurrent) {
-        currentYearDays = Math.min(completedMonths(hireDate, today), 11);
+      const isOldLaw = hireDate <= new Date(2017, 4, 31);
+      if (isOldLaw) {
+        // 구법(2017.05.31 이전 입사): 입사 연도 연차 없음
+        days = 0;
+        basis = '구법 적용 (2017.05.31 이전 입사) — 입사 연도 연차 없음';
+        currentYearDays = 0;
       } else {
-        currentYearDays = days;
+        // 신법: 입사월부터 연말까지 월단위 발생
+        const mToYearEnd = completedMonths(hireDate, dec31);
+        days = Math.min(mToYearEnd, 11);
+        basis = `입사월부터 ${mToYearEnd}개월 → ${days}일 (월단위)`;
+        if (isCurrent) {
+          currentYearDays = Math.min(completedMonths(hireDate, today), 11);
+        } else {
+          currentYearDays = days;
+        }
       }
     } else {
       const mAtJan1 = completedMonths(hireDate, jan1);
