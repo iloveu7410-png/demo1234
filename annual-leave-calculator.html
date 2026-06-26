@@ -592,7 +592,7 @@ function render() {
         </div>
         <div class="rc-body">
           <div class="stat-row">
-            <span class="stat-label">발생 연차${fiscal.prevYearDays ? ` <span style="font-size:11px;color:#888">(전년 ${fiscal.prevYearDays}일 + 올해 ${fiscal.currentYearDays - fiscal.prevYearDays}일)</span>` : ` (${today.getFullYear()}년)`}</span>
+            <span class="stat-label">발생 연차${fiscal.prevYearDays ? ` <span style="font-size:11px;color:#888">(전년 ${fiscal.prevYearDays}일 + 올해 ${fiscal.currentYearDays - fiscal.prevYearDays}일)</span>` : ''}</span>
             <span class="stat-value accent">${fiscal.currentYearDays}일</span>
           </div>
           <div class="stat-row">
