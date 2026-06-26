@@ -374,6 +374,9 @@ function calcAnniversaryBasis(hireDate, today) {
         ? Math.ceil((mAtJan1 * 15) / 12 * 2) / 2
         : annualEntitlement(1);
       basis = `1.1 기준 ${mAtJan1}개월 → ${mAtJan1}/12 × 15 = ${days}일`;
+    } else if (isOldLaw && y >= 2) {
+      days = annualEntitlement(y - 1);
+      basis = `근속 ${y}년 → ${days}일 일괄 부여`;
     } else {
       days = annualEntitlement(y);
       basis = `근속 ${y}년 → ${days}일 일괄 부여`;
