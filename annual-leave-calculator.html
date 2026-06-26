@@ -365,13 +365,25 @@ function calcAnniversaryBasis(hireDate, today) {
     const pStart = addYears(hireDate, y);
     if (pStart > today) break;
     const pEnd = addDays(addYears(hireDate, y + 1), -1);
-    const days = annualEntitlement(y);
+
+    let days, basis;
+    if (isOldLaw && y === 1) {
+      const jan1OfAnnivYear = new Date(pStart.getFullYear(), 0, 1);
+      const mAtJan1 = completedMonths(hireDate, jan1OfAnnivYear);
+      days = mAtJan1 < 12
+        ? Math.ceil((mAtJan1 * 15) / 12 * 2) / 2
+        : annualEntitlement(1);
+      basis = `1.1 기준 ${mAtJan1}개월 → ${mAtJan1}/12 × 15 = ${days}일`;
+    } else {
+      days = annualEntitlement(y);
+      basis = `근속 ${y}년 → ${days}일 일괄 부여`;
+    }
     const isCurrent = pStart <= today && today <= pEnd;
 
     rows.push({
       period: `${formatDate(pStart)} ~ ${formatDate(pEnd)}`,
       label: `${y + 1}년차`,
-      basis: `근속 ${y}년 → ${days}일 일괄 부여`,
+      basis,
       total: days,
       accrued: days,
       isCurrent,
