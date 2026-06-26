@@ -342,18 +342,19 @@ function calcAnniversaryBasis(hireDate, today) {
   const yr1End = addDays(anniv1, -1);
   const isFirstYear = today < anniv1;
 
-  // 1년차: 월 단위 발생
+  // 1년차: 월 단위 발생 (구법은 0일)
+  const isOldLaw = hireDate <= new Date(2017, 4, 31);
   const monthsToAnniv = completedMonths(hireDate, anniv1); // 항상 12
-  const yr1Total = Math.min(monthsToAnniv, 11); // 최대 11일
-  const yr1Accrued = isFirstYear
-    ? Math.min(completedMonths(hireDate, today), 11)
+  const yr1Total = isOldLaw ? 0 : Math.min(monthsToAnniv, 11);
+  const yr1Accrued = isOldLaw ? 0
+    : isFirstYear ? Math.min(completedMonths(hireDate, today), 11)
     : yr1Total;
 
   rows.push({
     period: `${formatDate(hireDate)} ~ ${formatDate(yr1End)}`,
     label: '1년차',
-    basis: '월단위 발생 (1개월 = 1일)',
-    total: 11,
+    basis: isOldLaw ? '구법 적용 (2017.05.31 이전 입사) — 1년차 연차 없음' : '월단위 발생 (1개월 = 1일)',
+    total: isOldLaw ? 0 : 11,
     accrued: yr1Accrued,
     isCurrent: isFirstYear,
     isPast: !isFirstYear,
