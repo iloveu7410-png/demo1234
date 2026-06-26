@@ -524,8 +524,10 @@ function render() {
   hint.textContent = `✓ ${formatDate(hireDate)}`;
   hint.style.color = '#2e7d32';
 
-  const fiscal = calcFiscalYearBasis(hireDate, today);
-  const anniv  = calcAnniversaryBasis(hireDate, today);
+  // API 조회 데이터가 있으면 해당 연도 말일 기준으로 계산 (카드 연도 일치)
+  const refToday = empLookupResult ? new Date(empLookupResult.year, 11, 31) : today;
+  const fiscal = calcFiscalYearBasis(hireDate, refToday);
+  const anniv  = calcAnniversaryBasis(hireDate, refToday);
 
   const fiscalRemain = fiscal.currentYearDays - usedDays;
   const anniversaryRemain = anniv.currentDays - usedDays;
