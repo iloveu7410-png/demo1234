@@ -242,9 +242,8 @@
 <script>
 /* ================================================================
    ★ 구글 시트 연동 설정
-   시트 URL을 바꾸려면 SHEET_ID만 수정하세요.
 ================================================================ */
-const SHEET_URL = "/api/survey-data";
+const SHEET_ID = "1G01EUM42iPu1xRScAPWV6sF1AaX662Q5Vu9feFFF_p0";
 
 /* ================================================================
    ★ 초기 더미 데이터 — 자동 연동 실패 시 표시됩니다.
@@ -657,25 +656,93 @@ function refresh() {
    — 페이지 로드 시 자동 실행
    — 헤더 연동 배지 클릭 시 수동 새로고침
 ================================================================ */
-async function fetchFromSheets() {
+function fetchFromSheets() {
   setSyncBadge("loading");
-  try {
-    const res = await fetch(SHEET_URL);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const text = await res.text();
-    const data = parseSheetCSV(text);
-    if (!data.length) throw new Error("데이터 없음");
-    surveyData = data;
-    refresh();
-    setSyncBadge("ok");
-  } catch (err) {
-    console.warn("구글 시트 연동 실패:", err.message);
-    setSyncBadge("error");
-    refresh(); // 기존 더미 데이터로 표시
+
+  // gviz JSONP: file:// 포함 모든 환경에서 CORS 없이 동작
+  const cbName = "_gsCallback_" + Date.now();
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&tq=select%20*&gid=0&callback=${cbName}`;
+
+  const timer = setTimeout(() => {
+    cleanup();
+    // 타임아웃 시 서버 프록시로 폴백
+    fetchViaProxy();
+  }, 6000);
+
+  function cleanup() {
+    clearTimeout(timer);
+    delete window[cbName];
+    const s = document.getElementById("_gs_script");
+    if (s) s.remove();
   }
+
+  window[cbName] = function(raw) {
+    cleanup();
+    try {
+      const tbl = raw.table;
+      if (!tbl || !tbl.rows || !tbl.rows.length) throw new Error("데이터 없음");
+      const data = tbl.rows.map(row => {
+        const c = row.c || [];
+        const v = i => (c[i]?.v ?? c[i]?.f ?? "").toString().trim();
+        const info = v(0).split("/");
+        return {
+          empId:      info[0]?.trim() || "",
+          dept:       info[1]?.trim() || "",
+          name:       info[2]?.trim() || "",
+          overallSat: v(1),
+          comp:       v(3),
+          workload:   v(4),
+          supervisor: v(5),
+          growth:     v(7),
+          culture:    v(9),
+          exitReason: v(11),
+          futurePlan: v(12),
+          suggestions:v(13),
+        };
+      }).filter(r => r.name);
+      if (!data.length) throw new Error("파싱된 데이터 없음");
+      surveyData = data;
+      refresh();
+      setSyncBadge("ok");
+    } catch(e) {
+      console.warn("gviz 파싱 실패:", e.message);
+      fetchViaProxy();
+    }
+  };
+
+  const script = document.createElement("script");
+  script.id = "_gs_script";
+  script.onerror = () => { cleanup(); fetchViaProxy(); };
+  script.src = url;
+  document.head.appendChild(script);
 }
 
-function setSyncBadge(state) {
+async function fetchViaProxy() {
+  // 서버가 있는 환경(Render/localhost)에서의 폴백
+  const urls = [
+    "/api/survey-data",
+    `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=0`,
+  ];
+  for (const url of urls) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      const text = await res.text();
+      if (text.trimStart().startsWith('<!')) continue;
+      const data = parseSheetCSV(text);
+      if (!data.length) continue;
+      surveyData = data;
+      refresh();
+      setSyncBadge("ok");
+      return;
+    } catch {}
+  }
+  console.warn("모든 연동 방법 실패");
+  setSyncBadge("error", "구글 시트를 '링크가 있는 모든 사용자' 보기로 공유했는지 확인해 주세요.");
+  refresh();
+}
+
+function setSyncBadge(state, errDetail) {
   const el = document.getElementById("sync-badge");
   if (!el) return;
   const S = {
@@ -683,12 +750,15 @@ function setSyncBadge(state) {
     ok:      { text:"🔗 연동됨",             bg:"rgba(16,185,129,.1)", br:"rgba(16,185,129,.28)", color:"#059669" },
     error:   { text:"⚠️ 연동 실패",          bg:"rgba(244,63,94,.1)",  br:"rgba(244,63,94,.28)",  color:"#e11d48" },
   };
-  const s = S[state];
+  const s = {...S[state]};
   if (state === "ok") {
     const t = new Date();
     s.text = `🔗 연동됨 ${t.getHours()}:${String(t.getMinutes()).padStart(2,"0")}`;
   }
   el.textContent = s.text;
+  el.title = state === "error" && errDetail
+    ? `오류: ${errDetail}\n\n구글 시트 → 파일 → 공유 → 웹에 게시 → CSV 로 게시하거나,\n"링크가 있는 모든 사용자" 보기로 공유해 주세요.\n\n클릭하면 다시 시도합니다.`
+    : "클릭하여 새로고침";
   el.style.cssText = `background:${s.bg};border:1px solid ${s.br};color:${s.color};cursor:pointer;padding:4px 13px;border-radius:100px;font-size:.6875rem;font-weight:600;white-space:nowrap;`;
 }
 
